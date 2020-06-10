@@ -72,12 +72,28 @@ class Rescale(object):
 
         new_h, new_w = int(new_h), int(new_w)
 
-        # Nearest Neighbor Resizing
+        # TODO: USing Nearest Neighbor Resizing. Bilinear better?
+        # TODO: NOTE resize automatically adjusts range of color_image from uint8 [0, 255]
+        #  to float64 [0, 1]. Then Rescale converts this to float64 [-1, 1] and __getitem__
+        #  to float32 [-1, 1]. This could be a big performance hit. Converting to float32 here
+        #  though could mean losing a bit of precision when converting from [0, 1] to [-1, 1].
+        #  What is the right way to do this conversion?
         input_image = transform.resize(input_image, (new_h, new_w), order=0)
         color_image = transform.resize(color_image, (new_h, new_w), order=0)
 
         return {'uv': input_image, 'color': color_image}
 
+
+class Normalize(object):
+    """Normalize color images between [-1,1]."""
+
+    def __call__(self, sample):
+        input_image, color_image = sample['uv'], sample['color']
+        # TODO: Move all normalization to this function
+        #color_image = (color_image / 127.5) - 1
+        color_image = (color_image * 2.0) - 1
+
+        return {'uv': input_image, 'color': color_image}
 
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
@@ -107,11 +123,13 @@ class UVDataLoader(DataLoader):
             self.dataset = UVDataset(train_filenames, transform=transforms.Compose([
                 Rescale(_INPUT_SIZE),
                 # TODO: Add data augmentation
+                Normalize(),
                 ToTensor()]))
         else:
             val_filenames = self.generate_temporal_val_split(input_color_filenames, skip)
             self.dataset = UVDataset(val_filenames, transform=transforms.Compose([
                 Rescale(_INPUT_SIZE),
+                Normalize(),
                 ToTensor()]))
 
 
