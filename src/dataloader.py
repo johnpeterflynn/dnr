@@ -106,6 +106,7 @@ class UVDataLoader(DataLoader):
             train_filenames = self.generate_temporal_train_split(input_color_filenames, skip)
             self.dataset = UVDataset(train_filenames, transform=transforms.Compose([
                 Rescale(_INPUT_SIZE),
+                # TODO: Add data augmentation
                 ToTensor()]))
         else:
             val_filenames = self.generate_temporal_val_split(input_color_filenames, skip)
