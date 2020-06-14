@@ -9,8 +9,11 @@ class DeferredNeuralRenderer(nn.Module):
         self.kernel = 4
         self.leakynegslope = 0.2
         self.leakyrelu = nn.LeakyReLU(self.leakynegslope)
-        self.tahh = nn.Tanh()
+        self.tanh = nn.Tanh()
 
+        # TODO: Network cannot handle arbitrarily sized inputs because odd dimensions are
+        #  rounded down in the convolutional layers. Need a way to fix this (asymmetric padding?)
+        #  to handle arbitrary screen sizes
         self.conv1 = nn.Conv2d(in_channels=input_size, out_channels=64, kernel_size=self.kernel,
                                stride=self.stride, padding=1)
         self.norm1 = nn.InstanceNorm2d(num_features=64)
@@ -85,23 +88,23 @@ class DeferredNeuralRenderer(nn.Module):
         n5 = self.norm5(a5)
 
         # TODO: Verify that this is the correct order for skip connections
-        c6 = self.conv1(n5)
+        c6 = self.conv6(n5)
         a6 = self.leakyrelu(c6)
-        n6 = self.norm1(a6)
+        n6 = self.norm6(a6)
         m7 = torch.cat((n4, n6), dim=1)
-        c7 = self.conv2(m7)
+        c7 = self.conv7(m7)
         a7 = self.leakyrelu(c7)
-        n7 = self.norm2(a7)
+        n7 = self.norm7(a7)
         m8 = torch.cat((n3, n7), dim=1)
-        c8 = self.conv3(m8)
+        c8 = self.conv8(m8)
         a8 = self.leakyrelu(c8)
-        n8 = self.norm3(a8)
+        n8 = self.norm8(a8)
         m9 = torch.cat((n2, n8), dim=1)
-        c9 = self.conv4(m9)
+        c9 = self.conv9(m9)
         a9 = self.leakyrelu(c9)
-        n9 = self.norm4(a9)
+        n9 = self.norm9(a9)
         m10 = torch.cat((n1, n9), dim=1)
-        c10 = self.conv5(m10)
+        c10 = self.conv10(m10)
         a10 = self.tanh(c10)
 
         return a10

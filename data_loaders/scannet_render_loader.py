@@ -121,14 +121,14 @@ class UVDataLoader(DataLoader):
         if training:
             train_filenames = self.generate_temporal_train_split(input_color_filenames, skip)
             self.dataset = UVDataset(train_filenames, transform=transforms.Compose([
-                Rescale(_INPUT_SIZE),
+                Rescale((_INPUT_SIZE, _INPUT_SIZE)), # TODO: Preserve aspect ratio
                 # TODO: Add data augmentation
                 Normalize(),
                 ToTensor()]))
         else:
             val_filenames = self.generate_temporal_val_split(input_color_filenames, skip)
             self.dataset = UVDataset(val_filenames, transform=transforms.Compose([
-                Rescale(_INPUT_SIZE),
+                Rescale((_INPUT_SIZE, _INPUT_SIZE)),
                 Normalize(),
                 ToTensor()]))
 
@@ -149,7 +149,7 @@ class UVDataLoader(DataLoader):
         color_filenames = self.load_filenames_sorted(data_dir, 'color')
 
         # TODO: Remote 500 sample limit
-        input_color_filenames = list(zip(input_filenames, color_filenames))[0:500]
+        input_color_filenames = list(zip(input_filenames, color_filenames))[0:24]
 
         return input_color_filenames
 
