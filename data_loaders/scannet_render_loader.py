@@ -6,6 +6,7 @@ import numpy as np
 from skimage import io, transform
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+from base import BaseDataLoader
 
 #from torch.utils.data.dataloader import default_collate
 
@@ -112,9 +113,9 @@ class ToTensor(object):
                 'color': torch.from_numpy(color_image)}
 
 
-class UVDataLoader(DataLoader):
+class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
-    def __init__(self, data_dir, batch_size, shuffle, num_workers, skip, training=True):
+    def __init__(self, data_dir, batch_size, shuffle, skip, validation_split=0.0, num_workers=1, training=True):
         self.data_dir = data_dir
 
         input_color_filenames = self.load_input_color_filenames(data_dir)
@@ -132,16 +133,7 @@ class UVDataLoader(DataLoader):
                 Normalize(),
                 ToTensor()]))
 
-
-        self.init_kwargs = {
-            'dataset': self.dataset,
-            'batch_size': batch_size,
-            'shuffle': shuffle,
-            #'collate_fn': default_collate,
-            #'sampler': sampler,
-            'num_workers': num_workers
-        }
-        super().__init__(**self.init_kwargs)
+        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
         pass
 
     def load_input_color_filenames(self, data_dir):

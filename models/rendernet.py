@@ -1,8 +1,9 @@
 """RenderNet architecture"""
 import torch
 import torch.nn as nn
+from base import BaseModel
 
-class DeferredNeuralRenderer(nn.Module):
+class DeferredNeuralRenderer(BaseModel):
     def __init__(self, input_size):
         super(DeferredNeuralRenderer, self).__init__()
         self.stride = (2, 2)
