@@ -1,5 +1,5 @@
 {
-    "name": "Deferred_Neural_Rendering",
+    "name": "DNR",
     "n_gpu": 1,
 
     "arch": {
@@ -38,7 +38,7 @@
         "verbosity": 2,
         
         "monitor": "min val_loss",
-        "early_stop": 10,
+        "early_stop": 100,
 
         "tensorboard": true
     }
