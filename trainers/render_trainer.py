@@ -56,7 +56,10 @@ class RenderTrainer(BaseTrainer):
                     epoch,
                     self._progress(batch_idx),
                     loss.item()))
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+
+                self._visualize_input(data.cpu())
+                self._visualize_prediction(output.cpu())
+                self._visualize_target(target.cpu())
 
             if batch_idx == self.len_epoch:
                 break
@@ -89,7 +92,9 @@ class RenderTrainer(BaseTrainer):
                 self.valid_metrics.update('loss', loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(output, target))
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+                self._visualize_input(data.cpu())
+                self._visualize_prediction(output.cpu())
+                self._visualize_target(target.cpu())
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
@@ -105,3 +110,20 @@ class RenderTrainer(BaseTrainer):
             current = batch_idx
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
+
+    def _visualize_input(self, data):
+        """format and display input data on tensorboard"""
+        # Add am empty dimension to the uv coordinates so that it can be displayed
+        # in RGB
+        b, c, h, w = data.shape
+        data3 = torch.zeros(b, c + 1, h, w)
+        data3[:, 0:c, :, :] = data
+        self.writer.add_image('input', make_grid(data3, nrow=8, normalize=False))
+
+    def _visualize_prediction(self, output):
+        """format and display output data on tensorboard"""
+        self.writer.add_image('output', make_grid(output, nrow=8, normalize=True))
+
+    def _visualize_target(self, target):
+        """format and display target data on tensorboard"""
+        self.writer.add_image('target', make_grid(target, nrow=8, normalize=True))
