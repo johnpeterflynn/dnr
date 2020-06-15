@@ -43,7 +43,8 @@ class UVDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
 
-        return sample
+        # TODO: Don't pack and unlack samples like this.
+        return sample['uv'], sample['color']
 
 class Rescale(object):
     """Rescale the image in a sample to a given size.
@@ -115,26 +116,31 @@ class ToTensor(object):
 
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
-    def __init__(self, data_dir, batch_size, shuffle, skip, validation_split=0.0, num_workers=1, training=True):
+    def __init__(self, data_dir, batch_size, shuffle, skip, num_workers=1, training=True):
         self.data_dir = data_dir
+        self.skip = skip
+        self.input_color_filenames = self.load_input_color_filenames(data_dir)
 
-        input_color_filenames = self.load_input_color_filenames(data_dir)
-        if training:
-            train_filenames = self.generate_temporal_train_split(input_color_filenames, skip)
-            self.dataset = UVDataset(train_filenames, transform=transforms.Compose([
-                Rescale((_INPUT_SIZE, _INPUT_SIZE)), # TODO: Preserve aspect ratio
-                # TODO: Add data augmentation
-                Normalize(),
-                ToTensor()]))
-        else:
-            val_filenames = self.generate_temporal_val_split(input_color_filenames, skip)
-            self.dataset = UVDataset(val_filenames, transform=transforms.Compose([
-                Rescale((_INPUT_SIZE, _INPUT_SIZE)),
-                Normalize(),
-                ToTensor()]))
+        train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
+        self.dataset = UVDataset(train_filenames, transform=transforms.Compose([
+            Rescale((_INPUT_SIZE, _INPUT_SIZE)), # TODO: Preserve aspect ratio
+            # TODO: Add data augmentation
+            Normalize(),
+            ToTensor()]))
 
-        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
+        super().__init__(self.dataset, batch_size, shuffle, num_workers)
         pass
+
+    def split_validation(self):
+        val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
+        val_dataset = UVDataset(val_filenames, transform=transforms.Compose([
+            Rescale((_INPUT_SIZE, _INPUT_SIZE)),
+            Normalize(),
+            ToTensor()]))
+
+        batch_size = self.init_kwargs['batch_size']
+        num_workers = self.init_kwargs['num_workers']
+        return DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
 
     def load_input_color_filenames(self, data_dir):
         input_filenames = self.load_filenames_sorted(data_dir, 'uv')
