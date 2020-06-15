@@ -10,6 +10,7 @@ from parse_config import ConfigParser
 from trainers import RenderTrainer
 import subprocess
 
+
 # fix random seeds for reproducibility
 SEED = 123
 torch.manual_seed(SEED)
@@ -17,11 +18,20 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
-def main(config):
-    git_hash = subprocess.check_output(["git", "describe", "--always"]).strip()
-    print("Git hash:", git_hash)
 
+def main(config):
+    # init logger
     logger = config.get_logger('train')
+
+    # log the random seed
+    logger.info("Random seed: {}".format(SEED))
+
+    # log the current git hash
+    logger.info("Git hash: {}".format(
+        subprocess.check_output(["git", "describe", "--always"]).strip()))
+
+    # add full config to log
+    logger.info("Config: {}".format(config.config))
 
     # setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)
