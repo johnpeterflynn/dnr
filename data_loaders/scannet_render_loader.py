@@ -44,7 +44,8 @@ class UVDataset(Dataset):
             sample = self.transform(sample)
 
         # TODO: Don't pack and unlack samples like this.
-        return sample['uv'], sample['color']
+        # TODO: Don't convert to float here
+        return sample['uv'], sample['color'].float()
 
 class Rescale(object):
     """Rescale the image in a sample to a given size.
