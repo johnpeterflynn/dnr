@@ -28,7 +28,6 @@
     },
     "loss": "photometric_reproduction_loss",
     "metrics": [
-        "accuracy", "top_k_acc"
     ],
     "trainer": {
         "epochs": 100,
