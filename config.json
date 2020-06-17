@@ -3,9 +3,10 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "DeferredNeuralRenderer",
+        "type": "RenderNet",
         "args": {
-            "input_size": 2
+            "texture_size": 256,
+            "texture_depth": 16
         }
     },
     "data_loader": {

@@ -115,9 +115,12 @@ class RenderTrainer(BaseTrainer):
         """format and display input data on tensorboard"""
         # Add am empty dimension to the uv coordinates so that it can be displayed
         # in RGB
-        b, c, h, w = data.shape
-        data3 = torch.zeros(b, c + 1, h, w)
-        data3[:, 0:c, :, :] = data
+        # NOTE: uv coords are in form N x H x W x 2. We need to convert it to image
+        # format, eg: N x 3 x H x W
+        b, h, w, c = data.shape
+        data3 = torch.zeros(b, h, w, c + 1)
+        data3[:, :, :, 0:c] = data
+        data3 = data3.permute(0, 3, 1, 2)
         self.writer.add_image('input', make_grid(data3, nrow=8, normalize=False))
 
     def _visualize_prediction(self, output):

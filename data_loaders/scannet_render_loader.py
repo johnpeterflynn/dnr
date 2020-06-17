@@ -91,6 +91,8 @@ class Normalize(object):
 
     def __call__(self, sample):
         input_image, color_image = sample['uv'], sample['color']
+        # NOTE: Don't normalize input_image. It's just a matrix of coordinates
+
         # TODO: Move all normalization to this function
         #color_image = (color_image / 127.5) - 1
         color_image = (color_image * 2.0) - 1
@@ -103,12 +105,13 @@ class ToTensor(object):
     def __call__(self, sample):
         input_image, color_image = sample['uv'], sample['color']
 
-        # TODO: Is axis swapping necessary for uv coords?
+        # NOTE: Axis swapping is not necessary for uv coords since
+        #  it is not an image, but rather a matrix of coordinates
 
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
-        input_image = input_image.transpose((2, 0, 1))
+        #input_image = input_image.transpose((2, 0, 1))
         color_image = color_image.transpose((2, 0, 1))
         return {'uv': torch.from_numpy(input_image),
                 'color': torch.from_numpy(color_image)}

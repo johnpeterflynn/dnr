@@ -1,10 +1,47 @@
 """RenderNet architecture"""
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from base import BaseModel
 
-class DeferredNeuralRenderer(BaseModel):
-    def __init__(self, input_size):
+
+class RenderNet(BaseModel):
+    def __init__(self, texture_size, texture_depth):
+        super(RenderNet, self).__init__()
+        self.neural_texture = NeuralTexture(texture_size, texture_depth)
+        self.dnr = DeferredNeuralRenderer(texture_depth)
+
+    def forward(self, input):
+        f = self.neural_texture(input)
+        f = self.dnr(f)
+
+        return f
+
+
+class NeuralTexture(nn.Module):
+    def __init__(self, size, depth):
+        super(NeuralTexture, self).__init__()
+        # Init between [-1,1] to match our output texture
+        # dim0 = 1 to be dimensionally compatible with grid_sample
+
+        self.texture = torch.nn.Parameter(torch.FloatTensor(1, depth, size, size).uniform_(-1, 1),
+                                          requires_grad=True)
+
+    def forward(self, input):
+        # TODO: Make self.textures work with batch_size > 1
+        # TODO: NOTE: grid_sample samples texture as (row, col) while uv coordinates are
+        #  given as (u, v) s.t. (row, col) == (2*v - 1, 2*u - 1). We'll convert the range
+        #  from [0,1] to [-1,1] like above but we won't bother swapping u and v (for now).
+        #  This shouldn't be a problem as long as we're consistent but should eventually
+        #  be fixed for correctness.
+        grid = 2 * input - 1
+        sample = F.grid_sample(self.texture, grid, align_corners=False)
+
+        return sample
+
+
+class DeferredNeuralRenderer(nn.Module):
+    def __init__(self, input_channels):
         super(DeferredNeuralRenderer, self).__init__()
         self.stride = (2, 2)
         self.kernel = 4
@@ -15,7 +52,7 @@ class DeferredNeuralRenderer(BaseModel):
         # TODO: Network cannot handle arbitrarily sized inputs because odd dimensions are
         #  rounded down in the convolutional layers. Need a way to fix this (asymmetric padding?)
         #  to handle arbitrary screen sizes
-        self.conv1 = nn.Conv2d(in_channels=input_size, out_channels=64, kernel_size=self.kernel,
+        self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=self.kernel,
                                stride=self.stride, padding=1)
         self.norm1 = nn.InstanceNorm2d(num_features=64)
         self.conv2 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=self.kernel,
