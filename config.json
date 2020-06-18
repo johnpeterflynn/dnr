@@ -5,7 +5,7 @@
     "arch": {
         "type": "RenderNet",
         "args": {
-            "texture_size": 256,
+            "texture_size": 1024,
             "texture_depth": 16
         }
     },
@@ -31,10 +31,10 @@
     "metrics": [
     ],
     "trainer": {
-        "epochs": 100,
+        "epochs": 200,
 
         "save_dir": "saved/",
-        "save_period": 100,
+        "save_period": 10,
         "verbosity": 2,
         
         "monitor": "min val_loss",
