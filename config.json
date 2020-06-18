@@ -29,6 +29,7 @@
     },
     "loss": "photometric_reproduction_loss",
     "metrics": [
+	    "mse"
     ],
     "trainer": {
         "epochs": 200,

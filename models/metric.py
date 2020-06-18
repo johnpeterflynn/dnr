@@ -1,5 +1,9 @@
 import torch
 
+def mse(output, target):
+    criterion = torch.nn.MSELoss()
+    loss = criterion(output, target)
+    return loss.sum() / len(target)
 
 def accuracy(output, target):
     with torch.no_grad():
