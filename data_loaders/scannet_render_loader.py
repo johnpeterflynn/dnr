@@ -151,7 +151,7 @@ class UVDataLoader(BaseDataLoader):
         color_filenames = self.load_filenames_sorted(data_dir, 'color')
 
         # TODO: Remote 500 sample limit
-        input_color_filenames = list(zip(input_filenames, color_filenames))[0:2500:4]
+        input_color_filenames = list(zip(input_filenames, color_filenames))[0:2500:2]
 
         return input_color_filenames
 
