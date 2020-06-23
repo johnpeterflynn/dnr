@@ -65,6 +65,8 @@ class ConfigParser:
         else:
             msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
             assert args.config is not None, msg_no_cfg
+            msg_no_msg = "A short description of this training session must be provided with -m."
+            assert args.message is not None, msg_no_msg
             resume = None
             cfg_fname = Path(args.config)
         
@@ -72,6 +74,9 @@ class ConfigParser:
         if args.config and resume:
             # update new config for fine-tuning
             config.update(read_json(args.config))
+
+        if args.message:
+            config["description"] = args.message
 
         # parse custom cli options into dictionary
         modification = {opt.target : getattr(args, _get_opt_name(opt.flags)) for opt in options}

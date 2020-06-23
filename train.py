@@ -30,8 +30,8 @@ def main(config):
     logger.info("Git hash: {}".format(
         subprocess.check_output(["git", "describe", "--always"]).strip()))
 
-    # add full config to log
-    logger.info("Config: {}".format(config.config))
+    # print training session description to logs
+    logger.info("Description: {}".format(config["description"]))
 
     # setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)
@@ -65,6 +65,8 @@ if __name__ == '__main__':
                       help='path to latest checkpoint (default: None)')
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
+    args.add_argument('-m', '--message', default=None, type=str,
+                      help='description of this training session')
 
     # custom cli options to modify configuration from default values given in json file.
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
