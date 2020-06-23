@@ -57,9 +57,10 @@ class RenderTrainer(BaseTrainer):
                     self._progress(batch_idx),
                     loss.item()))
 
-                self._visualize_input(data.cpu())
-                self._visualize_prediction(output.cpu())
-                self._visualize_target(target.cpu())
+            # Only visualize the final sample for brevity
+            self._visualize_input(data.cpu())
+            self._visualize_prediction(output.cpu())
+            self._visualize_target(target.cpu())
 
             if batch_idx == self.len_epoch:
                 break
@@ -92,9 +93,11 @@ class RenderTrainer(BaseTrainer):
                 self.valid_metrics.update('loss', loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(output, target))
-                self._visualize_input(data.cpu())
-                self._visualize_prediction(output.cpu())
-                self._visualize_target(target.cpu())
+
+            # Only visualize the final sample for brevity
+            self._visualize_input(data.cpu())
+            self._visualize_prediction(output.cpu())
+            self._visualize_target(target.cpu())
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
