@@ -84,7 +84,6 @@ class DeferredNeuralRenderer(nn.Module):
                                          stride=self.stride, padding=1)
 
         # TODO: _normal_ vs _uniform_? 'fan_in' vs 'fan_out'?
-        # TODO: Bias initialization?
         # AKA He initialization
         nn.init.kaiming_normal_(self.conv1.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv2.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
@@ -92,14 +91,30 @@ class DeferredNeuralRenderer(nn.Module):
         nn.init.kaiming_normal_(self.conv4.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv5.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
 
+        # TODO: Is this a good bias initialization for leaky relu?
+        nn.init.zeros_(self.conv1.bias)
+        nn.init.zeros_(self.conv2.bias)
+        nn.init.zeros_(self.conv3.bias)
+        nn.init.zeros_(self.conv4.bias)
+        nn.init.zeros_(self.conv5.bias)
+
         # TODO: Appropriate initialization for transposed convolutions?
         nn.init.kaiming_normal_(self.conv6.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv7.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv8.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv9.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
 
+        # TODO: Is this a good bias initialization for leaky relu?
+        nn.init.zeros_(self.conv6.bias)
+        nn.init.zeros_(self.conv7.bias)
+        nn.init.zeros_(self.conv8.bias)
+        nn.init.zeros_(self.conv9.bias)
+
         # AKA Golrot initialization
         nn.init.xavier_uniform_(self.conv10.weight, nn.init.calculate_gain('tanh'))
+
+        # Set initial bias of output layer to zero since we're using (anti)symmetric tanh activation
+        nn.init.zeros_(self.conv10.bias)
 
     def forward(self, input):
         """Forward pass
