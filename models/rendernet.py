@@ -52,6 +52,8 @@ class DeferredNeuralRenderer(nn.Module):
         # NOTE: Arbitrary screen side made possible by dynamic output padding.
         # TODO: Output padding should be an input parameter
 
+
+
         self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=self.kernel,
                                stride=self.stride, padding=1)
         self.norm1 = nn.InstanceNorm2d(num_features=64)
@@ -141,28 +143,23 @@ class DeferredNeuralRenderer(nn.Module):
         n5 = self.norm5(a5)
 
         # TODO: Verify that this is the correct order for skip connections
-        self.conv6.output_padding = ((c4.shape[2] % 2), (c4.shape[3] % 2))
-        c6 = self.conv6(n5)
+        c6 = self.conv6(n5, output_size=c4.shape)
         a6 = self.leakyrelu(c6)
         n6 = self.norm6(a6)
         m7 = torch.cat((n4, n6), dim=1)
-        self.conv7.output_padding = ((c3.shape[2] % 2), (c3.shape[3] % 2))
-        c7 = self.conv7(m7)
+        c7 = self.conv7(m7, output_size=c3.shape)
         a7 = self.leakyrelu(c7)
         n7 = self.norm7(a7)
         m8 = torch.cat((n3, n7), dim=1)
-        self.conv8.output_padding = ((c2.shape[2] % 2), (c2.shape[3] % 2))
-        c8 = self.conv8(m8)
+        c8 = self.conv8(m8, output_size=c2.shape)
         a8 = self.leakyrelu(c8)
         n8 = self.norm8(a8)
         m9 = torch.cat((n2, n8), dim=1)
-        self.conv9.output_padding = ((c1.shape[2] % 2), (c1.shape[3] % 2))
-        c9 = self.conv9(m9)
+        c9 = self.conv9(m9, output_size=c1.shape)
         a9 = self.leakyrelu(c9)
         n9 = self.norm9(a9)
         m10 = torch.cat((n1, n9), dim=1)
-        self.conv10.output_padding = ((input.shape[2] % 2), (input.shape[3] % 2))
-        c10 = self.conv10(m10)
+        c10 = self.conv10(m10, output_size=input.shape)
         a10 = self.tanh(c10)
 
         return a10
