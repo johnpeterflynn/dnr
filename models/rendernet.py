@@ -34,8 +34,26 @@ class NeuralTexture(nn.Module):
         #  from [0,1] to [-1,1] like above but we won't bother swapping u and v (for now).
         #  This shouldn't be a problem as long as we're consistent but should eventually
         #  be fixed for correctness.
+        #grid = 2 * input - 1
+        #sample = F.grid_sample(self.texture, grid, align_corners=False)
+
+        #grid = 2 * input - 1
+        #for i in range(grid.shape[0]):
+        #    s = F.grid_sample(self.texture, grid[i, :, :, :].unsqueeze(0), align_corners=False)
+        #
+        #    if i == 0:
+        #        samples = s
+        #    else:
+        #        samples = torch.cat((samples, s), dim=0)
+        #
+        #return samples
+
+        # TODO: Does expanding the texture create any problems with training? Can we
+        #  expand just once in __init__()?
+        # TODO: Is training slowed by averaging over zeros that exist due to some pixels that
+        #  have yet tgo be trained?
         grid = 2 * input - 1
-        sample = F.grid_sample(self.texture, grid, align_corners=False)
+        sample = F.grid_sample(self.texture.expand(grid.shape[0], -1, -1, -1), grid, align_corners=False)
 
         return sample
 
@@ -51,8 +69,6 @@ class DeferredNeuralRenderer(nn.Module):
 
         # NOTE: Arbitrary screen side made possible by dynamic output padding.
         # TODO: Output padding should be an input parameter
-
-
 
         self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=self.kernel,
                                stride=self.stride, padding=1)
