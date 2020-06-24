@@ -57,13 +57,14 @@ class RenderTrainer(BaseTrainer):
                     self._progress(batch_idx),
                     loss.item()))
 
-            # Only visualize the final sample for brevity
-            self._visualize_input(data.cpu())
-            self._visualize_prediction(output.cpu())
-            self._visualize_target(target.cpu())
-
             if batch_idx == self.len_epoch:
                 break
+
+        # Only visualize the final sample for brevity
+        self._visualize_input(data.cpu())
+        self._visualize_prediction(output.cpu())
+        self._visualize_target(target.cpu())
+
         log = self.train_metrics.result()
 
         if self.do_validation:
