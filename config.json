@@ -32,7 +32,7 @@
 	    "mse_rgb32"
     ],
     "trainer": {
-        "epochs": 200,
+        "epochs": 300,
 
         "save_dir": "saved/",
         "save_period": 20,
