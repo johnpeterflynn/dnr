@@ -152,7 +152,7 @@ class UVDataLoader(BaseDataLoader):
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
         self.dataset = UVDataset(train_filenames, transform=transforms.Compose([
             # TODO: Add data augmentation
-            #RandomCrop((_INPUT_SIZE, _INPUT_SIZE)),  # TODO: Is RandomResidedCrop important for val?
+            RandomCrop((_INPUT_SIZE / 2, _INPUT_SIZE / 2)),
             Rescale((_INPUT_SIZE,_INPUT_SIZE)),#_SCREEN_HEIGHT, _SCREEN_WIDTH)), # TODO: Preserve aspect ratio
             Normalize(),
             ToTensor()]))
@@ -163,7 +163,7 @@ class UVDataLoader(BaseDataLoader):
     def split_validation(self):
         val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
         val_dataset = UVDataset(val_filenames, transform=transforms.Compose([
-            #RandomCrop((_INPUT_SIZE, _INPUT_SIZE)),  # TODO: Is RandomResidedCrop important for val?
+            RandomCrop((_INPUT_SIZE / 2, _INPUT_SIZE / 2)),  # TODO: Is RandomResidedCrop important for val?
             Rescale((_INPUT_SIZE,_INPUT_SIZE)),#_SCREEN_HEIGHT, _SCREEN_WIDTH)),
             Normalize(),
             ToTensor()]))
