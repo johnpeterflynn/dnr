@@ -16,7 +16,7 @@
             "batch_size": 4,
             "skip": 6,
             "shuffle": true,
-            "num_workers": 1
+            "num_workers": 2
         }
     },
     "optimizer": {
