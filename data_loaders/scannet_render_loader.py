@@ -98,16 +98,15 @@ class RandomCrop(object):
         h, w, c = color_image.shape
 
         # Get a crop size between the min crop and the smaller image dimension
-        h_crop = np.random.randint(self.min_crop[0], h)
-        w_crop = np.random.randint(self.min_crop[1], w)
+        crop = np.random.randint(self.min_crop, np.min([h, w]))
 
         # Get a valid starting position
-        h_start = np.random.randint(0, h - h_crop)
-        w_start = np.random.randint(0, w - w_crop)
+        h_start = np.random.randint(0, h - crop)
+        w_start = np.random.randint(0, w - crop)
 
         # Crop the input and target
-        input_image = input_image[h_start:h_start+h_crop, w_start:w_start+h_crop, :]
-        color_image = color_image[h_start:h_start+w_crop, w_start:w_start+w_crop, :]
+        input_image = input_image[h_start:h_start+crop, w_start:w_start+crop, :]
+        color_image = color_image[h_start:h_start+crop, w_start:w_start+crop, :]
 
         return {'uv': input_image, 'color': color_image}
 
@@ -152,7 +151,7 @@ class UVDataLoader(BaseDataLoader):
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
         self.dataset = UVDataset(train_filenames, transform=transforms.Compose([
             # TODO: Add data augmentation
-            RandomCrop((_INPUT_SIZE / 2, _INPUT_SIZE / 2)),
+            RandomCrop((_INPUT_SIZE / 2)),
             Rescale((_INPUT_SIZE,_INPUT_SIZE)),#_SCREEN_HEIGHT, _SCREEN_WIDTH)), # TODO: Preserve aspect ratio
             Normalize(),
             ToTensor()]))
@@ -163,7 +162,7 @@ class UVDataLoader(BaseDataLoader):
     def split_validation(self):
         val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
         val_dataset = UVDataset(val_filenames, transform=transforms.Compose([
-            RandomCrop((_INPUT_SIZE / 2, _INPUT_SIZE / 2)),  # TODO: Is RandomResidedCrop important for val?
+            RandomCrop((_INPUT_SIZE / 2)),  # TODO: Is RandomResidedCrop important for val?
             Rescale((_INPUT_SIZE,_INPUT_SIZE)),#_SCREEN_HEIGHT, _SCREEN_WIDTH)),
             Normalize(),
             ToTensor()]))
