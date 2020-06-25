@@ -1,9 +1,13 @@
 import torch
 
-def mse(output, target):
+def mse_rgb32(output, target):
     criterion = torch.nn.MSELoss()
     loss = criterion(output, target)
-    return loss.sum() / len(target)
+
+    # Convert output, target from [-1,1] to [0,255]
+    loss_rescaled = loss * (255 / 2) ** 2
+
+    return loss_rescaled
 
 def accuracy(output, target):
     with torch.no_grad():
