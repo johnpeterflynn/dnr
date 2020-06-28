@@ -29,6 +29,8 @@ class RenderTrainer(BaseTrainer):
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
+        self.ignore_edge_pixels = config['data_loader']['ignore_edge_pixels']
+
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
@@ -42,7 +44,7 @@ class RenderTrainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             output = self.model(data)
-            loss = self.criterion(output, target)
+            loss = self.criterion(output, target, self.ignore_edge_pixels)
             loss.backward()
             self.optimizer.step()
 
@@ -88,7 +90,7 @@ class RenderTrainer(BaseTrainer):
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
-                loss = self.criterion(output, target)
+                loss = self.criterion(output, target, self.ignore_edge_pixels)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
