@@ -1,4 +1,5 @@
 import torch
+import time
 from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
@@ -62,10 +63,13 @@ class BaseTrainer:
         """
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
+            clock_start = time.perf_counter()
             result = self._train_epoch(epoch)
+            clock_end = time.perf_counter()
 
             # save logged informations into log dict
-            log = {'epoch': epoch}
+            log = {'epoch': epoch,
+                   'time elapsed': clock_end - clock_start}
             log.update(result)
 
             # print logged informations to the screen
