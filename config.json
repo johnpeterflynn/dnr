@@ -17,8 +17,7 @@
             "skip": 6,
             "shuffle": true,
             "num_workers": 2
-        },
-        "ignore_edge_pixels": [11,7]
+        }
     },
     "optimizer": {
         "type": "Adam",
