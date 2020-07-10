@@ -7,7 +7,7 @@ def mse_rgb32(output, target):
     # Convert output, target from [-1,1] to [0,255]
     loss_rescaled = loss * (255 / 2) ** 2
 
-    return loss_rescaled
+    return loss_rescaled.item()
 
 def accuracy(output, target):
     with torch.no_grad():
