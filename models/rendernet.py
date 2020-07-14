@@ -6,9 +6,9 @@ from base import BaseModel
 
 
 class RenderNet(BaseModel):
-    def __init__(self, texture_size, texture_depth):
+    def __init__(self, texture_size, texture_depth, mipmap_levels):
         super(RenderNet, self).__init__()
-        self.neural_texture = NeuralTexture(texture_size, texture_depth)
+        self.neural_texture = NeuralTexture(texture_size, texture_depth, mipmap_levels)
         self.dnr = DeferredNeuralRenderer(texture_depth)
 
     def forward(self, input):
@@ -19,13 +19,15 @@ class RenderNet(BaseModel):
 
 
 class NeuralTexture(nn.Module):
-    def __init__(self, size, depth):
+    def __init__(self, size, depth, mipmap_levels):
         super(NeuralTexture, self).__init__()
         # Init between [-1,1] to match our output texture
         # dim0 = 1 to be dimensionally compatible with grid_sample
+        self.depth = depth
 
-        self.texture = torch.nn.Parameter(torch.FloatTensor(1, depth, size, size).uniform_(-1, 1),
-                                          requires_grad=True)
+        self.mipmap = nn.ParameterList([nn.Parameter(
+            torch.FloatTensor(1, depth, int(size / (2 ** i)), int(size / (2 ** i))).uniform_(-1, 1),
+            requires_grad=True) for i in range(mipmap_levels)])
 
     def forward(self, input):
         # TODO: Make self.textures work with batch_size > 1
@@ -48,12 +50,14 @@ class NeuralTexture(nn.Module):
         #
         #return samples
 
-        # TODO: Does expanding the texture create any problems with training? Can we
-        #  expand just once in __init__()?
         # TODO: Is training slowed by averaging over zeros that exist due to some pixels that
         #  have yet tgo be trained?
+        # Convert from [0, 1] to [-1, 1]
         grid = 2 * input - 1
-        sample = F.grid_sample(self.texture.expand(grid.shape[0], -1, -1, -1), grid, align_corners=False)
+        n_batches, _, _, _ = grid.shape
+        sample = 0
+        for texture in self.mipmap:
+            sample += F.grid_sample(texture.expand(n_batches, -1, -1, -1), grid, align_corners=False)
 
         return sample
 
