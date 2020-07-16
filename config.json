@@ -5,7 +5,7 @@
     "arch": {
         "type": "RenderNet",
         "args": {
-            "texture_size": 1024,
+            "texture_size": 2048,
             "texture_depth": 16,
             "mipmap_levels": 4
         }
@@ -27,7 +27,7 @@
             "weight_decay": 0,
             "amsgrad": true
         },
-        "laplacian_weight_decay": 0.00001
+        "laplacian_weight_decay": 0.0000025
     },
     "loss": "photometric_rep_loss_laplacian_l2",
     "metrics": [
