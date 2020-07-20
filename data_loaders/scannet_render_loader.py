@@ -2,6 +2,7 @@ import os
 import glob
 import torch
 import gzip
+import pandas as pd
 import numpy as np
 #rom torchvision import io
 from skimage import io, transform
@@ -153,13 +154,19 @@ class ToTensor(object):
 
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
-    def __init__(self, data_dir, batch_size, shuffle, skip, size=(_INPUT_SIZE, _INPUT_SIZE),
+    def __init__(self, data_dir, data_select_file, batch_size, shuffle, skip, size=(_INPUT_SIZE, _INPUT_SIZE),
                  compressed_input=False, num_workers=1, training=True):
         self.data_dir = data_dir
         self.skip = skip
         self.size = size
         self.compressed_input = compressed_input
+
+        with open(data_select_file) as csv_file:
+            data = pd.read_csv(csv_file, delimiter=' ', index_col=None, header=None)
+            self.use_indices = np.array(data.values).squeeze()
+
         self.input_color_filenames = self.load_input_color_filenames(data_dir)
+        self.input_color_filenames = [self.input_color_filenames[i] for i in self.use_indices]
 
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
         self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
@@ -175,7 +182,7 @@ class UVDataLoader(BaseDataLoader):
     def split_validation(self):
         val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
         val_dataset = UVDataset(val_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
-            RandomCrop((size[0] / 2)),  # TODO: Is RandomResidedCrop important for val?
+            RandomCrop((self.size[0] / 2)),  # TODO: Is RandomResidedCrop important for val?
             Rescale(self.size),#_SCREEN_HEIGHT, _SCREEN_WIDTH)),
             Normalize(),
             ToTensor()]))
