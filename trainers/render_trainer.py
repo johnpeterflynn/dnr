@@ -43,7 +43,7 @@ class RenderTrainer(BaseTrainer):
             self.optimizer.zero_grad()
             output = self.model(data)
             loss = self.criterion(output, target,
-                                  self.model.neural_texture.mipmap,
+                                  self.model.neural_texture.get_mipmap(),
                                   self.config['optimizer']['laplacian_weight_decay'])
             loss.backward()
             self.optimizer.step()
@@ -91,7 +91,7 @@ class RenderTrainer(BaseTrainer):
 
                 output = self.model(data)
                 loss = self.criterion(output, target,
-                                      self.model.neural_texture.mipmap,
+                                      self.model.neural_texture.get_mipmap(),
                                       self.config['optimizer']['laplacian_weight_decay'])
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')

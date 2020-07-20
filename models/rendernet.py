@@ -21,45 +21,52 @@ class RenderNet(BaseModel):
 class NeuralTexture(nn.Module):
     def __init__(self, size, depth, mipmap_levels):
         super(NeuralTexture, self).__init__()
-        # Init between [-1,1] to match our output texture
-        # dim0 = 1 to be dimensionally compatible with grid_sample
         self.depth = depth
 
-        self.mipmap = nn.ParameterList([nn.Parameter(
-            torch.FloatTensor(1, depth, int(size / (2 ** i)), int(size / (2 ** i))).uniform_(-1, 1),
-            requires_grad=True) for i in range(mipmap_levels)])
+        # Init between [-1,1] to match our output texture
+        # dim0 = 1 to be dimensionally compatible with grid_sample
+        #self.mipmap = nn.ParameterList([nn.Parameter(
+        #    torch.FloatTensor(1, depth, int(size / (2 ** i)), int(size / (2 ** i))).uniform_(-1, 1),
+        #    requires_grad=True) for i in range(mipmap_levels)])
+
+        # NOTE: TorchScript doesn't currently support nn.ParameterList so we need to unroll it for now
+        self.mipmap_0 = nn.Parameter(
+            torch.FloatTensor(1, depth, int(size / (2 ** 0)), int(size / (2 ** 0))).uniform_(-1, 1),
+            requires_grad=True)
+        self.mipmap_1 = nn.Parameter(
+            torch.FloatTensor(1, depth, int(size / (2 ** 1)), int(size / (2 ** 1))).uniform_(-1, 1),
+            requires_grad=True)
+        self.mipmap_2 = nn.Parameter(
+            torch.FloatTensor(1, depth, int(size / (2 ** 2)), int(size / (2 ** 2))).uniform_(-1, 1),
+            requires_grad=True)
+        self.mipmap_3 = nn.Parameter(
+            torch.FloatTensor(1, depth, int(size / (2 ** 3)), int(size / (2 ** 3))).uniform_(-1, 1),
+            requires_grad=True)
 
     def forward(self, input):
-        # TODO: Make self.textures work with batch_size > 1
         # TODO: NOTE: grid_sample samples texture as (row, col) while uv coordinates are
         #  given as (u, v) s.t. (row, col) == (2*v - 1, 2*u - 1). We'll convert the range
         #  from [0,1] to [-1,1] like above but we won't bother swapping u and v (for now).
         #  This shouldn't be a problem as long as we're consistent but should eventually
         #  be fixed for correctness.
-        #grid = 2 * input - 1
-        #sample = F.grid_sample(self.texture, grid, align_corners=False)
-
-        #grid = 2 * input - 1
-        #for i in range(grid.shape[0]):
-        #    s = F.grid_sample(self.texture, grid[i, :, :, :].unsqueeze(0), align_corners=False)
-        #
-        #    if i == 0:
-        #        samples = s
-        #    else:
-        #        samples = torch.cat((samples, s), dim=0)
-        #
-        #return samples
-
         # TODO: Is training slowed by averaging over zeros that exist due to some pixels that
         #  have yet tgo be trained?
         # Convert from [0, 1] to [-1, 1]
         grid = 2 * input - 1
         n_batches, _, _, _ = grid.shape
         sample = 0
-        for texture in self.mipmap:
-            sample += F.grid_sample(texture.expand(n_batches, -1, -1, -1), grid, align_corners=False)
+        #for texture in self.mipmap:
+        #    sample += F.grid_sample(texture.expand(n_batches, -1, -1, -1), grid, align_corners=False)
+
+        sample += F.grid_sample(self.mipmap_0.expand(n_batches, -1, -1, -1), grid, align_corners=False)
+        sample += F.grid_sample(self.mipmap_1.expand(n_batches, -1, -1, -1), grid, align_corners=False)
+        sample += F.grid_sample(self.mipmap_2.expand(n_batches, -1, -1, -1), grid, align_corners=False)
+        sample += F.grid_sample(self.mipmap_3.expand(n_batches, -1, -1, -1), grid, align_corners=False)
 
         return sample
+
+    def get_mipmap(self):
+        return [self.mipmap_0, self.mipmap_1, self.mipmap_2, self.mipmap_3]
 
 
 class DeferredNeuralRenderer(nn.Module):
