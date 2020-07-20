@@ -18,9 +18,10 @@ _UV_CHANNELS = 2
 _INPUT_SIZE = 256 # Size of input data to the network
 
 class UVDataset(Dataset):
-    def __init__(self, uv_color_filenames, transform=None):
+    def __init__(self, uv_color_filenames, compressed_input, transform=None):
         self.transform = transform
         self.uv_color_filenames = uv_color_filenames
+        self.compressed_input = compressed_input
         pass
 
     def __len__(self):
@@ -33,9 +34,12 @@ class UVDataset(Dataset):
         color_image = io.imread(color_image_path)
         color_image = np.array(color_image)
 
-        # Decompress texture coordinate file into a numpy array
-        with gzip.open(uv_image_path, 'rb') as f:
-            uv_image = np.frombuffer(f.read(), dtype='float32')
+        if self.compressed_input:
+            # Decompress texture coordinate file into a numpy array
+            with gzip.open(uv_image_path, 'rb') as f:
+                uv_image = np.frombuffer(f.read(), dtype='float32')
+        else:
+            uv_image = np.fromfile(uv_image_path, dtype='float32')
 
         uv_image = np.reshape(uv_image, (_SCREEN_HEIGHT, _SCREEN_WIDTH, _UV_CHANNELS))
         # TODO: Try contiguous
@@ -149,16 +153,19 @@ class ToTensor(object):
 
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
-    def __init__(self, data_dir, batch_size, shuffle, skip, num_workers=1, training=True):
+    def __init__(self, data_dir, batch_size, shuffle, skip, size=(_INPUT_SIZE, _INPUT_SIZE),
+                 compressed_input=False, num_workers=1, training=True):
         self.data_dir = data_dir
         self.skip = skip
+        self.size = size
+        self.compressed_input = compressed_input
         self.input_color_filenames = self.load_input_color_filenames(data_dir)
 
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
-        self.dataset = UVDataset(train_filenames, transform=transforms.Compose([
+        self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
             # TODO: Add data augmentation
-            RandomCrop((_INPUT_SIZE / 2)),
-            Rescale((_INPUT_SIZE,_INPUT_SIZE)),#_SCREEN_HEIGHT, _SCREEN_WIDTH)), # TODO: Preserve aspect ratio
+            RandomCrop((size[0] / 2)),
+            Rescale(self.size),#_SCREEN_HEIGHT, _SCREEN_WIDTH)), # TODO: Preserve aspect ratio
             Normalize(),
             ToTensor()]))
 
@@ -167,9 +174,9 @@ class UVDataLoader(BaseDataLoader):
 
     def split_validation(self):
         val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
-        val_dataset = UVDataset(val_filenames, transform=transforms.Compose([
-            RandomCrop((_INPUT_SIZE / 2)),  # TODO: Is RandomResidedCrop important for val?
-            Rescale((_INPUT_SIZE,_INPUT_SIZE)),#_SCREEN_HEIGHT, _SCREEN_WIDTH)),
+        val_dataset = UVDataset(val_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
+            RandomCrop((size[0] / 2)),  # TODO: Is RandomResidedCrop important for val?
+            Rescale(self.size),#_SCREEN_HEIGHT, _SCREEN_WIDTH)),
             Normalize(),
             ToTensor()]))
 
