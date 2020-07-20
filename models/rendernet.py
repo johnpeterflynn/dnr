@@ -21,10 +21,10 @@ class RenderNet(BaseModel):
 class NeuralTexture(nn.Module):
     def __init__(self, size, depth, mipmap_levels):
         super(NeuralTexture, self).__init__()
-        # Init between [-1,1] to match our output texture
-        # dim0 = 1 to be dimensionally compatible with grid_sample
         self.depth = depth
 
+        # Init between [-1,1] to match our output texture
+        # dim0 = 1 to be dimensionally compatible with grid_sample
         #self.mipmap = nn.ParameterList([nn.Parameter(
         #    torch.FloatTensor(1, depth, int(size / (2 ** i)), int(size / (2 ** i))).uniform_(-1, 1),
         #    requires_grad=True) for i in range(mipmap_levels)])
@@ -64,6 +64,9 @@ class NeuralTexture(nn.Module):
         sample += F.grid_sample(self.mipmap_3.expand(n_batches, -1, -1, -1), grid, align_corners=False)
 
         return sample
+
+    def get_mipmap(self):
+        return [self.mipmap_0, self.mipmap_1, self.mipmap_2, self.mipmap_3]
 
 
 class DeferredNeuralRenderer(nn.Module):
