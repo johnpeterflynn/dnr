@@ -15,10 +15,10 @@
         "args":{
             "data_dir": "data/",
             "data_select_file": "data/keep.txt",
-            "batch_size": 32,
+            "batch_size": 12,
             "skip": 6,
             "shuffle": true,
-            "compressed_input": false
+            "compressed_input": false,
             "num_workers": 1
         }
     },
