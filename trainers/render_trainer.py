@@ -129,12 +129,12 @@ class RenderTrainer(BaseTrainer):
         data3 = torch.zeros(b, h, w, c + 1)
         data3[:, :, :, 0:c] = data
         data3 = data3.permute(0, 3, 1, 2)
-        self.writer.add_image('input', make_grid(data3, nrow=8, normalize=False))
+        self.writer.add_image('input', make_grid(data3[0,:,:,:].unsqueeze(0), nrow=8, normalize=False))
 
     def _visualize_prediction(self, output):
         """format and display output data on tensorboard"""
-        self.writer.add_image('output', make_grid(output, nrow=8, normalize=True))
+        self.writer.add_image('output', make_grid(output[0,:,:,:].unsqueeze(0), nrow=8, normalize=True))
 
     def _visualize_target(self, target):
         """format and display target data on tensorboard"""
-        self.writer.add_image('target', make_grid(target, nrow=8, normalize=True))
+        self.writer.add_image('target', make_grid(target[0,:,:,:].unsqueeze(0), nrow=8, normalize=True))
