@@ -31,7 +31,7 @@
         },
         "laplacian_weight_decay": 0.0000025
     },
-    "loss": "photometric_rep_loss_laplacian_l2",
+    "loss": "photometric_rep_loss_laplacian_l2_color",
     "metrics": [
 	    "mse_rgb32"
     ],
