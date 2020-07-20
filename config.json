@@ -14,7 +14,7 @@
         "type": "UVDataLoader",
         "args":{
             "data_dir": "data/",
-            "data_select_file": "data/keep.txt",
+            "data_select_file": "data/keep_1.2.txt",
             "batch_size": 12,
             "skip": 6,
             "shuffle": true,
