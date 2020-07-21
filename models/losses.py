@@ -23,8 +23,8 @@ def laplacian_pyramid_l2_color_channel_regularization(weights, target, lam):
     loss = 0
     for i, layer in enumerate(weights):
         lam_prime = lam * ((4 ** (num_layers - i - 1)) - 1)
-        loss = loss + 0.5 * lam_prime * (torch.norm((layer[:, 0:3, :, :] - avg_colors), 2)
-                                         + torch.norm(layer[:, 3:, :, :], 2))
+        layer[:, 0:3, :, :] -= avg_colors
+        loss = loss + 0.5 * lam_prime * (torch.norm(layer, 2))
 
     return loss
 
