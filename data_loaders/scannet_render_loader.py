@@ -182,7 +182,7 @@ class UVDataLoader(BaseDataLoader):
     def split_validation(self):
         val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
         val_dataset = UVDataset(val_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
-            RandomCrop((self.size[0] / 2)),  # TODO: Is RandomResidedCrop important for val?
+            #RandomCrop((self.size[0] / 2)),  # TODO: Is RandomResidedCrop important for val?
             Rescale(self.size),#_SCREEN_HEIGHT, _SCREEN_WIDTH)),
             Normalize(),
             ToTensor()]))
