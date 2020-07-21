@@ -19,7 +19,7 @@ def laplacian_pyramid_l2_regularization(weights, lam):
 
 def laplacian_pyramid_l2_color_channel_regularization(weights, target, lam):
     num_layers = len(weights)
-    avg_colors = target.sum((2, 3), keepdim=True)
+    avg_colors = target.mean((0, 2, 3), keepdim=True)
     loss = 0
     for i, layer in enumerate(weights):
         lam_prime = lam * ((4 ** (num_layers - i - 1)) - 1)
