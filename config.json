@@ -19,7 +19,7 @@
             "skip": 6,
             "shuffle": true,
             "compressed_input": true,
-            "num_workers": 1
+            "num_workers": 4
         }
     },
     "optimizer": {
