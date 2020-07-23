@@ -18,7 +18,7 @@
             "batch_size": 12,
             "skip": 6,
             "shuffle": true,
-            "compressed_input": false,
+            "compressed_input": true,
             "num_workers": 1
         }
     },
