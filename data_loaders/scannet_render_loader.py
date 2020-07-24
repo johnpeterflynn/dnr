@@ -154,18 +154,18 @@ class ToTensor(object):
 
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
-    def __init__(self, data_dir, data_select_file, batch_size, shuffle, skip, size=(_INPUT_SIZE, _INPUT_SIZE),
+    def __init__(self, data_dir, uv_folder_name, color_folder_name, data_select_file, batch_size, shuffle, skip, size=(_INPUT_SIZE, _INPUT_SIZE),
                  compressed_input=False, num_workers=1, training=True):
         self.data_dir = data_dir
         self.skip = skip
         self.size = size
         self.compressed_input = compressed_input
 
-        with open(data_select_file) as csv_file:
+        with open(os.path.join(data_dir, data_select_file)) as csv_file:
             data = pd.read_csv(csv_file, delimiter=' ', index_col=None, header=None)
             self.use_indices = np.array(data.values).squeeze()
 
-        self.input_color_filenames = self.load_input_color_filenames(data_dir)
+        self.input_color_filenames = self.load_input_color_filenames(data_dir, uv_folder_name, color_folder_name)
         self.input_color_filenames = [self.input_color_filenames[i] for i in self.use_indices]
 
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
@@ -191,9 +191,9 @@ class UVDataLoader(BaseDataLoader):
         num_workers = self.init_kwargs['num_workers']
         return DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True)
 
-    def load_input_color_filenames(self, data_dir):
-        input_filenames = self.load_filenames_sorted(data_dir, 'uv')
-        color_filenames = self.load_filenames_sorted(data_dir, 'color')
+    def load_input_color_filenames(self, data_dir, uv_folder_name, color_folder_name):
+        input_filenames = self.load_filenames_sorted(data_dir, uv_folder_name)
+        color_filenames = self.load_filenames_sorted(data_dir, color_folder_name)
 
         # TODO: Remote 500 sample limit
         input_color_filenames = list(zip(input_filenames, color_filenames))
