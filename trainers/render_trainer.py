@@ -63,9 +63,9 @@ class RenderTrainer(BaseTrainer):
                 break
 
         # Only visualize the final sample for brevity
-        self._visualize_input(data.cpu())
-        self._visualize_prediction(output.cpu())
-        self._visualize_target(target.cpu())
+        #self._visualize_input(data.cpu())
+        #self._visualize_prediction(output.cpu())
+        #self._visualize_target(target.cpu())
 
         log = self.train_metrics.result()
 
