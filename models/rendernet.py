@@ -52,7 +52,8 @@ class NeuralTexture(nn.Module):
         # TODO: Is training slowed by averaging over zeros that exist due to some pixels that
         #  have yet tgo be trained?
         # Convert from [0, 1] to [-1, 1]
-        grid = 2 * input - 1
+        grid = 2 * input[:, :, :, 0:2] - 1
+        mask = input[:, :, :, 2].unsqueeze(1) # Mask will be broadcasted along dim1 (channels)
         n_batches, _, _, _ = grid.shape
         sample = 0
         #for texture in self.mipmap:
@@ -62,6 +63,9 @@ class NeuralTexture(nn.Module):
         sample += F.grid_sample(self.mipmap_1.expand(n_batches, -1, -1, -1), grid, align_corners=False)
         sample += F.grid_sample(self.mipmap_2.expand(n_batches, -1, -1, -1), grid, align_corners=False)
         sample += F.grid_sample(self.mipmap_3.expand(n_batches, -1, -1, -1), grid, align_corners=False)
+
+        # Remove (set to gradient-free 0) pixels that are no associated with a point on the mesh (fragment)
+        sample = sample * mask
 
         return sample
 

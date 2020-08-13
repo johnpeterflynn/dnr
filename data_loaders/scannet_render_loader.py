@@ -14,7 +14,7 @@ from base import BaseDataLoader
 
 _SCREEN_HEIGHT = 968
 _SCREEN_WIDTH = 1296
-_UV_CHANNELS = 2
+_UV_CHANNELS = 3
 
 _INPUT_SIZE = 256 # Size of input data to the network
 
@@ -167,6 +167,7 @@ class UVDataLoader(BaseDataLoader):
 
         self.input_color_filenames = self.load_input_color_filenames(data_dir, uv_folder_name, color_folder_name)
         self.input_color_filenames = [self.input_color_filenames[i] for i in self.use_indices]
+        self.input_color_filenames = self.input_color_filenames[0:1000]
 
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
         self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
