@@ -19,6 +19,8 @@
             "data_select_file": "filters/keypoint_blur_1.2.txt",
             "batch_size": 12,
             "skip": 6,
+            "slice_start": 0,
+            "slice_end": 2500,
             "shuffle": true,
             "compressed_input": true,
             "num_workers": 8
