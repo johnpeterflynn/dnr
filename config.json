@@ -14,7 +14,7 @@
         "type": "UVDataLoader",
         "args":{
             "data_dir": "data/scene0000_00",
-            "uv_folder_name": "uv/scene_lowres_vertexuv_cubed_proj",
+            "uv_folder_name": "uv/scene_nonbinary_vertexuv_smartuv_enclosedsquare",
             "color_folder_name": "color",
             "data_select_file": "filters/keypoint_blur_1.2.txt",
             "batch_size": 12,
