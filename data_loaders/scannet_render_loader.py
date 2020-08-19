@@ -167,7 +167,8 @@ class UVDataLoader(BaseDataLoader):
             self.use_indices = np.array(data.values).squeeze()
 
         self.input_color_filenames = self.load_input_color_filenames(data_dir, uv_folder_name, color_folder_name)
-        self.input_color_filenames = [self.input_color_filenames[i] for i in self.use_indices]
+        self.input_color_filenames = [self.input_color_filenames[i] for i in self.use_indices if
+                                      slice_start <= i < slice_end]
         self.input_color_filenames = self.input_color_filenames[slice(slice_start, slice_end)]
 
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
