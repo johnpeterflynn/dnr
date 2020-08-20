@@ -102,21 +102,21 @@ class RandomCrop(object):
 
     def __call__(self, sample):
         input_image, color_image = sample['uv'], sample['color']
-
+        
         # Assuming input_image and color_image are the same shape
         h, w, c = color_image.shape
         min_h, min_w = self.min_crop
 
         # Get a crop size while maintaining aspect ratio
         size_crop_h = np.random.randint(min_h, h)
-        size_crop_w = np.round(w * size_crop_h / h)
+        size_crop_w = np.round(w * size_crop_h / h).astype(int)
 
         # Get a valid starting and end positions
         h_start = np.random.randint(0, h - size_crop_h)
         w_start = np.random.randint(0, w - size_crop_w)
         h_end = h_start + size_crop_h
         w_end = w_start + size_crop_w
-
+        
         # Crop the input and target
         input_image = input_image[h_start:h_end, w_start:w_end, :]
         color_image = color_image[h_start:h_end, w_start:w_end, :]
@@ -164,7 +164,8 @@ class UVDataLoader(BaseDataLoader):
         self.skip = skip
         self.size = (input_height, input_width)
         self.crop_scale = crop_scale
-        self.crop_size = (np.round(input_height * self.crop_scale), np.round(input_width * self.crop_scale))
+        self.crop_size = (np.round(input_height * self.crop_scale).astype(int),
+                          np.round(input_width * self.crop_scale).astype(int))
         self.compressed_input = compressed_input
 
         with open(os.path.join(data_dir, data_select_file)) as csv_file:
