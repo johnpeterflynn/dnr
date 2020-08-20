@@ -20,7 +20,7 @@
             "batch_size": 12,
             "skip": 6,
             "slice_start": 0,
-            "slice_end": 5578,
+            "slice_end": 500,
             "scale_height":968,
             "scale_width": 1296,
             "shuffle": true,
