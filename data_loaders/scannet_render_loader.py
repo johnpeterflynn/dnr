@@ -12,11 +12,7 @@ from base import BaseDataLoader
 
 #from torch.utils.data.dataloader import default_collate
 
-_SCREEN_HEIGHT = 968
-_SCREEN_WIDTH = 1296
 _UV_CHANNELS = 2
-
-_INPUT_SIZE = 256 # Size of input data to the network
 
 class UVDataset(Dataset):
     def __init__(self, uv_color_filenames, compressed_input, transform=None):
@@ -35,6 +31,8 @@ class UVDataset(Dataset):
         color_image = io.imread(color_image_path)
         color_image = np.array(color_image)
 
+        image_height, image_width, _ = color_image.shape
+
         if self.compressed_input:
             # Decompress texture coordinate file into a numpy array
             with gzip.open(uv_image_path, 'rb') as f:
@@ -42,7 +40,7 @@ class UVDataset(Dataset):
         else:
             uv_image = np.fromfile(uv_image_path, dtype='float32')
 
-        uv_image = np.reshape(uv_image, (_SCREEN_HEIGHT, _SCREEN_WIDTH, _UV_CHANNELS))
+        uv_image = np.reshape(uv_image, (image_height, image_width, _UV_CHANNELS))
         # TODO: Try contiguous
         # TODO: Remove copying here. Without it, flipping creates a "negative stride" error, which
         # might just be a problem with PyTorch. The only suggestion online so far is to copy the array
@@ -107,17 +105,21 @@ class RandomCrop(object):
 
         # Assuming input_image and color_image are the same shape
         h, w, c = color_image.shape
+        min_h, min_w = self.min_crop
 
-        # Get a crop size between the min crop and the smaller image dimension
-        crop = np.random.randint(self.min_crop, np.min([h, w]))
+        # Get a crop size while maintaining aspect ratio
+        size_crop_h = np.random.randint(min_h, h)
+        size_crop_w = np.round(w * size_crop_h / h)
 
-        # Get a valid starting position
-        h_start = np.random.randint(0, h - crop)
-        w_start = np.random.randint(0, w - crop)
+        # Get a valid starting and end positions
+        h_start = np.random.randint(0, h - size_crop_h)
+        w_start = np.random.randint(0, w - size_crop_w)
+        h_end = h_start + size_crop_h
+        w_end = w_start + size_crop_w
 
         # Crop the input and target
-        input_image = input_image[h_start:h_start+crop, w_start:w_start+crop, :]
-        color_image = color_image[h_start:h_start+crop, w_start:w_start+crop, :]
+        input_image = input_image[h_start:h_end, w_start:w_end, :]
+        color_image = color_image[h_start:h_end, w_start:w_end, :]
 
         return {'uv': input_image, 'color': color_image}
 
@@ -155,11 +157,12 @@ class ToTensor(object):
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
     def __init__(self, data_dir, uv_folder_name, color_folder_name, data_select_file, batch_size, shuffle, skip,
-                 slice_start=None, slice_end=None, size=(_INPUT_SIZE, _INPUT_SIZE), compressed_input=False, num_workers=1,
-                 training=True):
+                 slice_start=None, slice_end=None, scale_height=None, scale_width=None, compressed_input=False,
+                 num_workers=1, training=True):
+
         self.data_dir = data_dir
         self.skip = skip
-        self.size = size
+        self.size = (scale_height, scale_width)
         self.compressed_input = compressed_input
 
         with open(os.path.join(data_dir, data_select_file)) as csv_file:
@@ -174,8 +177,8 @@ class UVDataLoader(BaseDataLoader):
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
         self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
             # TODO: Add data augmentation
-            RandomCrop((size[0] / 2)),
-            Rescale(self.size),#_SCREEN_HEIGHT, _SCREEN_WIDTH)), # TODO: Preserve aspect ratio
+            RandomCrop((self.size / 2)),
+            Rescale(self.size),
             Normalize(),
             ToTensor()]))
 
@@ -185,8 +188,7 @@ class UVDataLoader(BaseDataLoader):
     def split_validation(self):
         val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
         val_dataset = UVDataset(val_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
-            #RandomCrop((self.size[0] / 2)),  # TODO: Is RandomResidedCrop important for val?
-            Rescale(self.size),#_SCREEN_HEIGHT, _SCREEN_WIDTH)),
+            Rescale(self.size),
             Normalize(),
             ToTensor()]))
 
