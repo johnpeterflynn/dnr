@@ -105,8 +105,8 @@ class RenderTrainer(BaseTrainer):
             self._visualize_target(target.cpu())
 
         # add histogram of model parameters to the tensorboard
-        for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins='auto')
+        #for name, p in self.model.named_parameters():
+        #    self.writer.add_histogram(name, p, bins='auto')
         return self.valid_metrics.result()
 
     def _progress(self, batch_idx):
