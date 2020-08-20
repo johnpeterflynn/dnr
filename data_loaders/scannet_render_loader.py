@@ -157,12 +157,14 @@ class ToTensor(object):
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
     def __init__(self, data_dir, uv_folder_name, color_folder_name, data_select_file, batch_size, shuffle, skip,
-                 slice_start=None, slice_end=None, scale_height=None, scale_width=None, compressed_input=False,
+                 input_height, input_width, crop_scale=1.0, slice_start=None, slice_end=None, compressed_input=False,
                  num_workers=1, training=True):
 
         self.data_dir = data_dir
         self.skip = skip
-        self.size = (scale_height, scale_width)
+        self.size = (input_height, input_width)
+        self.crop_scale = crop_scale
+        self.crop_size = (np.round(input_height * self.crop_scale), np.round(input_width * self.crop_scale))
         self.compressed_input = compressed_input
 
         with open(os.path.join(data_dir, data_select_file)) as csv_file:
@@ -177,7 +179,7 @@ class UVDataLoader(BaseDataLoader):
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
         self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
             # TODO: Add data augmentation
-            RandomCrop((self.size / 2)),
+            RandomCrop(self.crop_size),
             Rescale(self.size),
             Normalize(),
             ToTensor()]))

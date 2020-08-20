@@ -21,8 +21,9 @@
             "skip": 6,
             "slice_start": 0,
             "slice_end": 500,
-            "scale_height":968,
-            "scale_width": 1296,
+            "input_height":968,
+            "input_width": 1296,
+            "crop_scale": 0.5,
             "shuffle": true,
             "compressed_input": true,
             "num_workers": 8
