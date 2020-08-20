@@ -91,7 +91,10 @@ class Rescale(object):
         #  though could mean losing a bit of precision when converting from [0, 1] to [-1, 1].
         #  What is the right way to do this conversion?
         input_image = transform.resize(input_image, (new_h, new_w), order=0)
-        color_image = transform.resize(color_image, (new_h, new_w), order=0)
+
+        # Use bilinear interpolation for color image and anti-aliasing if resize
+        #  is downsampling
+        color_image = transform.resize(color_image, (new_h, new_w), order=1, anti_aliasing=(h > new_h))
 
         return {'uv': input_image, 'color': color_image}
 
