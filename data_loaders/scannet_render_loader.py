@@ -108,7 +108,7 @@ class RandomCrop(object):
         min_h, min_w = self.min_crop
 
         # Get a crop size while maintaining aspect ratio
-        size_crop_h = np.random.randint(min_h, h)
+        size_crop_h = np.random.randint(min_h, h) if min_h < h else h
         size_crop_w = np.round(w * size_crop_h / h).astype(int)
 
         # Get a valid starting and end positions
