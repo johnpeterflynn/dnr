@@ -96,19 +96,20 @@ class Rescale(object):
         return {'uv': input_image, 'color': color_image}
 
 class RandomCrop(object):
-    def __init__(self, min_crop):
-        #super().__init__(, self)
-        self.min_crop = min_crop
+    def __init__(self, min_crop_scale):
+        self.min_crop_scale = min_crop_scale
 
     def __call__(self, sample):
         input_image, color_image = sample['uv'], sample['color']
         
         # Assuming input_image and color_image are the same shape
         h, w, c = color_image.shape
-        min_h, min_w = self.min_crop
+
+        min_size_crop_h = np.round(h * self.min_crop_scale).astype(int)
+        #min_size_crop_w = np.round(w * self.min_crop_scale).astype(int)
 
         # Get a crop size while maintaining aspect ratio
-        size_crop_h = np.random.randint(min_h, h) if min_h < h else h
+        size_crop_h = np.random.randint(min_size_crop_h, h) if min_size_crop_h < h else h
         size_crop_w = np.round(w * size_crop_h / h).astype(int)
 
         # Get a valid starting and end positions
@@ -157,15 +158,19 @@ class ToTensor(object):
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
     def __init__(self, data_dir, uv_folder_name, color_folder_name, data_select_file, batch_size, shuffle, skip,
-                 input_height, input_width, crop_scale=1.0, slice_start=None, slice_end=None, compressed_input=False,
+                 net_input_height, net_input_width, min_crop_scale=1.0, slice_start=None, slice_end=None, compressed_input=False,
                  num_workers=1, training=True):
+
+        # Note on data augmentation
+        #  First we crop the original image
+        #  Then we resize to input_height, input_width. This is the size of the input to the model
 
         self.data_dir = data_dir
         self.skip = skip
-        self.size = (input_height, input_width)
-        self.crop_scale = crop_scale
-        self.crop_size = (np.round(input_height * self.crop_scale).astype(int),
-                          np.round(input_width * self.crop_scale).astype(int))
+        self.size = (net_input_height, net_input_width)
+        self.min_crop_scale = min_crop_scale
+        #self.min_crop_size = (np.round(input_height * self.crop_scale).astype(int),
+        #                  np.round(input_width * self.crop_scale).astype(int))
         self.compressed_input = compressed_input
 
         with open(os.path.join(data_dir, data_select_file)) as csv_file:
@@ -180,7 +185,7 @@ class UVDataLoader(BaseDataLoader):
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
         self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
             # TODO: Add data augmentation
-            RandomCrop(self.crop_size),
+            RandomCrop(self.min_crop_scale),
             Rescale(self.size),
             Normalize(),
             ToTensor()]))
