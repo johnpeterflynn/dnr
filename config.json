@@ -5,7 +5,7 @@
     "arch": {
         "type": "RenderNet",
         "args": {
-            "texture_size": 2048,
+            "texture_size": 3000,
             "texture_depth": 16,
             "mipmap_levels": 4
         }
