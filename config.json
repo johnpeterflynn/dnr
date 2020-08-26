@@ -17,7 +17,7 @@
             "uv_folder_name": "uv/scene0000_00_vh_clean_smartuv_89_0_1_enclosed",
             "color_folder_name": "color",
             "data_select_file": "filters/keypoint_blur_1.2.txt",
-            "batch_size": 3,
+            "batch_size": 2,
             "skip": 6,
             "slice_start": 0,
             "slice_end": 150,
