@@ -90,9 +90,7 @@ class RenderTrainer(BaseTrainer):
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
-                loss = self.criterion(output, target,
-                                      self.model.neural_texture.get_mipmap(),
-                                      self.config['optimizer']['laplacian_weight_decay'])
+                loss = self.criterion(output, target, self.model.neural_texture.get_mipmap(), 0)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
