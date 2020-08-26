@@ -20,7 +20,7 @@
             "batch_size": 5,
             "skip": 6,
             "slice_start": 0,
-            "slice_end": 150,
+            "slice_end": 5578,
             "net_input_height":256,
             "net_input_width": 342,
             "min_crop_scale": 0.26,
