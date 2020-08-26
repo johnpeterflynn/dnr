@@ -24,6 +24,7 @@
             "net_input_height":256,
             "net_input_width": 342,
             "min_crop_scale": 0.13,
+            "max_crop_scale": 0.26,
             "shuffle": true,
             "compressed_input": true,
             "num_workers": 8
