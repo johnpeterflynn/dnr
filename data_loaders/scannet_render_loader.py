@@ -113,8 +113,8 @@ class RandomCrop(object):
         size_crop_w = np.round(w * size_crop_h / h).astype(int)
 
         # Get a valid starting and end positions
-        h_start = np.random.randint(0, h - size_crop_h)
-        w_start = np.random.randint(0, w - size_crop_w)
+        h_start = np.random.randint(0, h - size_crop_h) if size_crop_h < h else 0
+        w_start = np.random.randint(0, w - size_crop_w) if size_crop_w < w else 0
         h_end = h_start + size_crop_h
         w_end = w_start + size_crop_w
         
