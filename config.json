@@ -44,14 +44,14 @@
 	    "mse_rgb32"
     ],
     "trainer": {
-        "epochs": 300,
+        "epochs": 500,
 
         "save_dir": "saved/",
-        "save_period": 300,
+        "save_period": 50,
         "verbosity": 2,
         
         "monitor": "min val_loss",
-        "early_stop": 300,
+        "early_stop": 500,
 
         "tensorboard": true
     }
