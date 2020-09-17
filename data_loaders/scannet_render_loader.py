@@ -5,7 +5,7 @@ import gzip
 import pandas as pd
 import numpy as np
 #rom torchvision import io
-from skimage import io, transform
+import skimage
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from base import BaseDataLoader
@@ -28,7 +28,7 @@ class UVDataset(Dataset):
         uv_image_path, color_image_path = self.uv_color_filenames[idx]
 
         # TODO: Is there s single library to use both for loading images and raw files?
-        color_image = io.imread(color_image_path)
+        color_image = skimage.io.imread(color_image_path)
         color_image = np.array(color_image)
 
         image_height, image_width, _ = color_image.shape
@@ -90,8 +90,8 @@ class Rescale(object):
         #  to float32 [-1, 1]. This could be a big performance hit. Converting to float32 here
         #  though could mean losing a bit of precision when converting from [0, 1] to [-1, 1].
         #  What is the right way to do this conversion?
-        input_image = transform.resize(input_image, (new_h, new_w), order=0)
-        color_image = transform.resize(color_image, (new_h, new_w), order=0)
+        input_image = skimage.transform.resize(input_image, (new_h, new_w), order=0)
+        color_image = skimage.transform.resize(color_image, (new_h, new_w), order=0)
 
         return {'uv': input_image, 'color': color_image}
 
@@ -133,8 +133,7 @@ class Normalize(object):
         input_image, color_image = sample['uv'], sample['color']
         # NOTE: Don't normalize input_image. It's just a matrix of coordinates
 
-        # TODO: Move all normalization to this function
-        #color_image = (color_image / 127.5) - 1
+        color_image = skimage.img_as_float(color_image)
         color_image = (color_image * 2.0) - 1
 
         return {'uv': input_image, 'color': color_image}
@@ -186,22 +185,32 @@ class UVDataLoader(BaseDataLoader):
         self.input_color_filenames = self.input_color_filenames[slice(slice_start, slice_end, slice_step)]
 
         train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
-        self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
-            # TODO: Add data augmentation
-            RandomCrop(self.min_crop_scale, self.max_crop_scale),
+
+        # Build train transformation
+        train_transforms = [
+            RandomCrop(self.min_crop_scale),
             Rescale(self.size),
             Normalize(),
-            ToTensor()]))
+            ToTensor()
+        ]
+
+        self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input,
+                                 transform=transforms.Compose(train_transforms))
 
         super().__init__(self.dataset, batch_size, shuffle, num_workers)
         pass
 
     def split_validation(self):
         val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
-        val_dataset = UVDataset(val_filenames, compressed_input=self.compressed_input, transform=transforms.Compose([
-            Rescale(self.size),
+
+        # Build val transformation
+        val_transforms = [
             Normalize(),
-            ToTensor()]))
+            ToTensor()
+        ]
+
+        val_dataset = UVDataset(val_filenames, compressed_input=self.compressed_input,
+                                transform=transforms.Compose(val_transforms))
 
         batch_size = self.init_kwargs['batch_size']
         num_workers = self.init_kwargs['num_workers']
@@ -211,7 +220,6 @@ class UVDataLoader(BaseDataLoader):
         input_filenames = self.load_filenames_sorted(data_dir, uv_folder_name)
         color_filenames = self.load_filenames_sorted(data_dir, color_folder_name)
 
-        # TODO: Remote 500 sample limit
         input_color_filenames = list(zip(input_filenames, color_filenames))
 
         return input_color_filenames
