@@ -41,11 +41,7 @@ class UVDataset(Dataset):
             uv_image = np.fromfile(uv_image_path, dtype='float32')
 
         uv_image = np.reshape(uv_image, (image_height, image_width, _UV_CHANNELS))
-        # TODO: Try contiguous
-        # TODO: Remove copying here. Without it, flipping creates a "negative stride" error, which
-        # might just be a problem with PyTorch. The only suggestion online so far is to copy the array
-        # but this is likely a huge waste of resources
-        uv_image = np.flip(uv_image, axis=0).copy()
+        uv_image = np.flip(uv_image, axis=0)
 
         sample = {'uv': uv_image, 'color': color_image}
 
