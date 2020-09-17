@@ -180,7 +180,7 @@ class UVDataLoader(BaseDataLoader):
         # Build train transformation
         train_transforms = [
             Normalize(),
-            RandomCrop(self.min_crop_scale),
+            RandomCrop(self.min_crop_scale, self.max_crop_scale),
             Rescale(self.size),
             ToTensor()
         ]
