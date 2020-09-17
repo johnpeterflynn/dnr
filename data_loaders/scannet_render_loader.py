@@ -41,7 +41,10 @@ class UVDataset(Dataset):
             uv_image = np.fromfile(uv_image_path, dtype='float32')
 
         uv_image = np.reshape(uv_image, (image_height, image_width, _UV_CHANNELS))
-        uv_image = np.flip(uv_image, axis=0)
+
+        # Stride becomes negative without a copy
+        # TODO: Remove need to flip image by optimizing data preprocessing
+        uv_image = np.flip(uv_image, axis=0).copy()
 
         sample = {'uv': uv_image, 'color': color_image}
 
