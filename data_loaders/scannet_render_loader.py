@@ -182,9 +182,9 @@ class UVDataLoader(BaseDataLoader):
 
         # Build train transformation
         train_transforms = [
-            Normalize(),
             RandomCrop(self.min_crop_scale, self.max_crop_scale),
             Rescale(self.size),
+            Normalize(),
             ToTensor()
         ]
 
@@ -205,8 +205,8 @@ class UVDataLoader(BaseDataLoader):
         #  batch size for validation to fit the unscaled data into memory.
         # Build val transformation
         val_transforms = [
-            Normalize(),
             Rescale(self.size), # Added to help data fit into GPU memory.
+            Normalize(),
             ToTensor()
         ]
 
