@@ -37,8 +37,9 @@ class RenderTrainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target) in enumerate(self.data_loader):
-            data, target = data.to(self.device), target.to(self.device)
+        for batch_idx, (data_cpu, target_cpu) in enumerate(self.data_loader):
+            data = data_cpu.to(self.device)
+            target = target_cpu.to(self.device, non_blocking=True)
 
             self.optimizer.zero_grad()
             output = self.model(data)
@@ -63,9 +64,9 @@ class RenderTrainer(BaseTrainer):
                 break
 
         # Only visualize the final sample for brevity
-        self._visualize_input(data.cpu())
+        self._visualize_input(data_cpu)
         self._visualize_prediction(output.cpu())
-        self._visualize_target(target.cpu())
+        self._visualize_target(target_cpu)
 
         log = self.train_metrics.result()
 
@@ -86,8 +87,9 @@ class RenderTrainer(BaseTrainer):
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
-                data, target = data.to(self.device), target.to(self.device)
+            for batch_idx, (data_cpu, target_cpu) in enumerate(self.valid_data_loader):
+                data = data_cpu.to(self.device)
+                target = target_cpu.to(self.device, non_blocking=True)
 
                 output = self.model(data)
                 loss = self.criterion(output, target, self.model.neural_texture.get_mipmap(), 0)
@@ -98,9 +100,9 @@ class RenderTrainer(BaseTrainer):
                     self.valid_metrics.update(met.__name__, met(output, target))
 
             # Only visualize the final sample for brevity
-            self._visualize_input(data.cpu())
+            self._visualize_input(data_cpu)
             self._visualize_prediction(output.cpu())
-            self._visualize_target(target.cpu())
+            self._visualize_target(target_cpu)
 
         # add histogram of model parameters to the tensorboard
         #for name, p in self.model.named_parameters():
