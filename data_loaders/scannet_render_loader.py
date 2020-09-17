@@ -53,8 +53,7 @@ class UVDataset(Dataset):
             sample = self.transform(sample)
 
         # TODO: Don't pack and unlack samples like this.
-        # TODO: Don't convert to float here
-        return sample['uv'], sample['color'].float()
+        return sample['uv'], sample['color']
 
 class Rescale(object):
     """Rescale the image in a sample to a given size.
@@ -85,11 +84,7 @@ class Rescale(object):
         new_h, new_w = int(new_h), int(new_w)
 
         # TODO: USing Nearest Neighbor Resizing. Bilinear better?
-        # TODO: NOTE resize automatically adjusts range of color_image from uint8 [0, 255]
-        #  to float64 [0, 1]. Then Rescale converts this to float64 [-1, 1] and __getitem__
-        #  to float32 [-1, 1]. This could be a big performance hit. Converting to float32 here
-        #  though could mean losing a bit of precision when converting from [0, 1] to [-1, 1].
-        #  What is the right way to do this conversion?
+        # TODO: Anti aliasing?
         input_image = skimage.transform.resize(input_image, (new_h, new_w), order=0)
         color_image = skimage.transform.resize(color_image, (new_h, new_w), order=0)
 
@@ -133,7 +128,7 @@ class Normalize(object):
         input_image, color_image = sample['uv'], sample['color']
         # NOTE: Don't normalize input_image. It's just a matrix of coordinates
 
-        color_image = skimage.img_as_float(color_image)
+        color_image = skimage.img_as_float32(color_image)
         color_image = (color_image * 2.0) - 1
 
         return {'uv': input_image, 'color': color_image}
@@ -188,9 +183,9 @@ class UVDataLoader(BaseDataLoader):
 
         # Build train transformation
         train_transforms = [
+            Normalize(),
             RandomCrop(self.min_crop_scale),
             Rescale(self.size),
-            Normalize(),
             ToTensor()
         ]
 
