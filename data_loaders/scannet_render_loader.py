@@ -5,7 +5,7 @@ import gzip
 import pandas as pd
 import numpy as np
 #rom torchvision import io
-import skimage
+from skimage import io, transform, img_as_float32
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from base import BaseDataLoader
@@ -28,7 +28,7 @@ class UVDataset(Dataset):
         uv_image_path, color_image_path = self.uv_color_filenames[idx]
 
         # TODO: Is there s single library to use both for loading images and raw files?
-        color_image = skimage.io.imread(color_image_path)
+        color_image = io.imread(color_image_path)
         color_image = np.array(color_image)
 
         image_height, image_width, _ = color_image.shape
@@ -81,8 +81,8 @@ class Rescale(object):
 
         # TODO: USing Nearest Neighbor Resizing. Bilinear better?
         # TODO: Anti aliasing?
-        input_image = skimage.transform.resize(input_image, (new_h, new_w), order=0)
-        color_image = skimage.transform.resize(color_image, (new_h, new_w), order=0)
+        input_image = transform.resize(input_image, (new_h, new_w), order=0)
+        color_image = transform.resize(color_image, (new_h, new_w), order=0)
 
         return {'uv': input_image, 'color': color_image}
 
@@ -124,7 +124,7 @@ class Normalize(object):
         input_image, color_image = sample['uv'], sample['color']
         # NOTE: Don't normalize input_image. It's just a matrix of coordinates
 
-        color_image = skimage.img_as_float32(color_image)
+        color_image = img_as_float32(color_image)
         color_image = (color_image * 2.0) - 1
 
         return {'uv': input_image, 'color': color_image}
