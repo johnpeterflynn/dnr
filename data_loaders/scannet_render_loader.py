@@ -197,9 +197,16 @@ class UVDataLoader(BaseDataLoader):
     def split_validation(self):
         val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
 
+        # TODO: NOTE: Validation is scaled so that it can fit into memory with the same batch size as the training
+        #  dataset. This is a problem because 1) the validation set is not capable of evaluating improvements in
+        #  fine details of the neural textures since they're downsampled away and 2) the validation loss between
+        #  models trained with different self.size will not be directly comparable. A solution for (1) is to employ
+        #  random cropping (but not scaling) on the validation set and a solution for (2) is to use a small enough
+        #  batch size for validation to fit the unscaled data into memory.
         # Build val transformation
         val_transforms = [
             Normalize(),
+            Rescale(self.size), # Added to help data fit into GPU memory.
             ToTensor()
         ]
 
