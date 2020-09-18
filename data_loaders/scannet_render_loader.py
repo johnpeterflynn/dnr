@@ -63,26 +63,32 @@ class Rescale(object):
             to output_size keeping aspect ratio the same.
     """
 
-    def __init__(self, output_size):
-        assert isinstance(output_size, (int, tuple))
-        self.output_size = output_size
+    def __init__(self, min_size, max_size):
+        # For now size is defined as the smaller size of an image
+        assert isinstance(min_size, int)
+        assert isinstance(max_size, int)
+        assert min_size <= max_size
+        self.min_size = min_size
+        self.max_size = max_size
 
     def __call__(self, sample):
         input_image, color_image = sample['uv'], sample['color']
 
         h, w = color_image.shape[:2]
 
-        if isinstance(self.output_size, int):
+        output_size = np.random.randint(self.min_size, self.max_size + 1)
+
+        if isinstance(output_size, int):
             if h > w:
-                new_h, new_w = self.output_size * h / w, self.output_size
+                new_h, new_w = output_size * h / w, output_size
             else:
-                new_h, new_w = self.output_size, self.output_size * w / h
+                new_h, new_w = output_size, output_size * w / h
         else:
-            new_h, new_w = self.output_size
+            new_h, new_w = output_size
 
         new_h, new_w = int(new_h), int(new_w)
 
-        # TODO: USing Nearest Neighbor Resizing. Bilinear better?
+        # TODO: Using Nearest Neighbor Resizing. Bilinear better?
         # TODO: Anti aliasing?
         input_image = transform.resize(input_image, (new_h, new_w), order=0)
         color_image = transform.resize(color_image, (new_h, new_w), order=0)
@@ -90,10 +96,9 @@ class Rescale(object):
         return {'uv': input_image, 'color': color_image}
 
 class RandomCrop(object):
-    def __init__(self, min_crop_scale, max_crop_scale):
-        assert min_crop_scale <= max_crop_scale
-        self.min_crop_scale = min_crop_scale
-        self.max_crop_scale = max_crop_scale
+    def __init__(self, crop_size):
+        assert isinstance(crop_size, tuple)
+        self.crop_size = crop_size
 
     def __call__(self, sample):
         input_image, color_image = sample['uv'], sample['color']
@@ -101,12 +106,7 @@ class RandomCrop(object):
         # Assuming input_image and color_image are the same shape
         h, w, c = color_image.shape
 
-        min_size_crop_h = np.round(h * self.min_crop_scale).astype(int)
-        max_size_crop_h = np.round(h * self.max_crop_scale).astype(int)
-
-        # Get a crop size while maintaining aspect ratio
-        size_crop_h = np.random.randint(min_size_crop_h, max_size_crop_h) if min_size_crop_h < max_size_crop_h else max_size_crop_h
-        size_crop_w = np.round(w * size_crop_h / h).astype(int)
+        size_crop_h, size_crop_w = self.crop_size
 
         # Get a valid starting and end positions
         h_start = np.random.randint(0, h - size_crop_h) if size_crop_h < h else 0
@@ -153,20 +153,19 @@ class ToTensor(object):
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
     def __init__(self, data_dir, uv_folder_name, color_folder_name, data_select_file, batch_size, shuffle, skip,
-                 net_input_height, net_input_width, min_crop_scale=1.0, max_crop_scale=1.0, slice_start=None, slice_end=None, slice_step=None, compressed_input=False,
+                 net_input_height, net_input_width, min_scale_size=None, max_scale_size=None, slice_start=None,
+                 slice_end=None, slice_step=None, compressed_input=False,
                  num_workers=1, training=True):
-
-        # Note on data augmentation
-        #  First we crop the original image
-        #  Then we resize to input_height, input_width. This is the size of the input to the model
 
         self.data_dir = data_dir
         self.skip = skip
         self.size = (net_input_height, net_input_width)
-        self.min_crop_scale = min_crop_scale
-        self.max_crop_scale = max_crop_scale
-        #self.min_crop_size = (np.round(input_height * self.crop_scale).astype(int),
-        #                  np.round(input_width * self.crop_scale).astype(int))
+
+        # Default min and max scaling size to the smaller image side
+        smaller_side_size = np.min(net_input_height, net_input_width)
+        self.min_scale_size = min_scale_size if self.min_scale_size is not None else smaller_side_size
+        self.max_scale_size = max_scale_size if self.max_scale_size is not None else smaller_side_size
+
         self.compressed_input = compressed_input
 
         with open(os.path.join(data_dir, data_select_file)) as csv_file:
@@ -182,8 +181,8 @@ class UVDataLoader(BaseDataLoader):
 
         # Build train transformation
         train_transforms = [
-            RandomCrop(self.min_crop_scale, self.max_crop_scale),
-            Rescale(self.size),
+            Rescale(self.min_scale_size, self.max_scale_size),
+            RandomCrop(self.size),
             Normalize(),
             ToTensor()
         ]
@@ -205,7 +204,7 @@ class UVDataLoader(BaseDataLoader):
         #  batch size for validation to fit the unscaled data into memory.
         # Build val transformation
         val_transforms = [
-            Rescale(self.size), # Added to help data fit into GPU memory.
+            RandomCrop(self.size), # Added to help data fit into GPU memory.
             Normalize(),
             ToTensor()
         ]
