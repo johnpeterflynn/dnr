@@ -37,7 +37,7 @@
             "weight_decay": 0,
             "amsgrad": true
         },
-        "laplacian_weight_decay": 5e-7
+        "laplacian_weight_decay": 2.5e-6
     },
     "loss": "photometric_rep_loss_laplacian_l2",
     "metrics": [
