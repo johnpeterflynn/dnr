@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torchvision.utils import make_grid
 from base import BaseTrainer
+from models.losses import VGGLoss
 from utils import inf_loop, MetricTracker
 
 
@@ -26,6 +27,8 @@ class RenderTrainer(BaseTrainer):
         self.lr_scheduler = lr_scheduler
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
+        self.criterionVGG = VGGLoss().to(self.device);
+
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
@@ -45,7 +48,8 @@ class RenderTrainer(BaseTrainer):
             output = self.model(data)
             loss = self.criterion(output, target,
                                   self.model.neural_texture.get_mipmap(),
-                                  self.config['optimizer']['laplacian_weight_decay'])
+                                  self.config['optimizer']['laplacian_weight_decay'])\
+                   + self.criterionVGG(output, target)
             loss.backward()
             self.optimizer.step()
 
@@ -92,7 +96,8 @@ class RenderTrainer(BaseTrainer):
                 target = target_cpu.to(self.device, non_blocking=True)
 
                 output = self.model(data)
-                loss = self.criterion(output, target, self.model.neural_texture.get_mipmap(), 0)
+                loss = self.criterion(output, target, self.model.neural_texture.get_mipmap(), 0)\
+                       + self.criterionVGG(output, target)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())

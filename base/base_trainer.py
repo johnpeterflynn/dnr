@@ -20,6 +20,12 @@ class BaseTrainer:
             self.model = torch.nn.DataParallel(model, device_ids=device_ids)
 
         self.criterion = criterion
+#
+#        # If criterion is a stateful object (for now considered to me an nn.Module) and not
+#        #  a functional then move it to the computing device
+#        if isinstance(self.criterion, torch.nn.Module):
+#            self.criterion = self.criterion.to(self.device)
+
         self.metric_ftns = metric_ftns
         self.optimizer = optimizer
 

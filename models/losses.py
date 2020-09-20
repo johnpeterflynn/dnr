@@ -1,4 +1,5 @@
 import torch
+from .vgg16 import VGG16
 
 
 # TODO: IS the photometric reproduction loss really just MAE?
@@ -48,3 +49,34 @@ def color_channel_regularization(weights, target, lam):
     loss = lam * loss
 
     return loss
+
+
+def gram_matrix(y):
+    (b, ch, h, w) = y.size()
+    features = y.view(b, ch, w * h)
+    features_t = features.transpose(1, 2)
+    gram = features.bmm(features_t) / (ch * h * w)
+    return gram
+
+
+class VGGLoss(torch.nn.Module):
+    def __init__(self):
+        super(VGGLoss, self).__init__()
+        self.model = VGG16()
+        self.criterionL2 = torch.nn.MSELoss(reduction='mean')
+
+    def forward(self, fake, target, content_weight=1.0, style_weight=1.0):
+        vgg_fake = self.model(fake)
+        vgg_target = self.model(target)
+
+        content_loss = self.criterionL2(vgg_target.relu2_2, vgg_fake.relu2_2)
+
+        # gram_matrix
+        gram_style = [gram_matrix(y) for y in vgg_target]
+        style_loss = 0.0
+        for ft_y, gm_s in zip(vgg_fake, gram_style):
+            gm_y = gram_matrix(ft_y)
+            style_loss += self.criterionL2(gm_y, gm_s)
+
+        total_loss = content_weight * content_loss + style_weight * style_loss
+        return total_loss
