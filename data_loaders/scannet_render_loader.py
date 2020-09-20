@@ -162,9 +162,9 @@ class UVDataLoader(BaseDataLoader):
         self.size = (net_input_height, net_input_width)
 
         # Default min and max scaling size to the smaller image side
-        smaller_side_size = np.min(net_input_height, net_input_width)
-        self.min_scale_size = min_scale_size if self.min_scale_size is not None else smaller_side_size
-        self.max_scale_size = max_scale_size if self.max_scale_size is not None else smaller_side_size
+        smaller_side_size = min(net_input_height, net_input_width)
+        self.min_scale_size = min_scale_size if min_scale_size is not None else smaller_side_size
+        self.max_scale_size = max_scale_size if max_scale_size is not None else smaller_side_size
 
         self.compressed_input = compressed_input
 
