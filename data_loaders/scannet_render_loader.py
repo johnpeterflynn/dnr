@@ -166,6 +166,9 @@ class UVDataLoader(BaseDataLoader):
         self.min_scale_size = min_scale_size if min_scale_size is not None else smaller_side_size
         self.max_scale_size = max_scale_size if max_scale_size is not None else smaller_side_size
 
+        assert self.min_scale_size >= smaller_side_size,\
+            'min scale size cannot be smaller than the smaller network input size'
+
         self.compressed_input = compressed_input
 
         with open(os.path.join(data_dir, data_select_file)) as csv_file:
