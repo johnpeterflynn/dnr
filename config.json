@@ -39,7 +39,7 @@
         },
         "laplacian_weight_decay": 2.5e-6
     },
-    "loss": "photometric_rep_loss_laplacian_l2",
+    "loss": "photometric_reproduction_loss",
     "metrics": [
 	    "mse_rgb32"
     ],
