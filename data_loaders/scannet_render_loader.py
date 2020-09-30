@@ -127,9 +127,10 @@ class RandomFlip(object):
 
     def __call__(self, sample):
         input_image, color_image = sample['uv'], sample['color']
-        
-        input_image = np.flip(input_image, axis=self.flip_axis).copy()
-        color_image = np.flip(color_image, axis=self.flip_axis).copy()
+       
+        if np.random.choice(a=[False, True]):
+            input_image = np.flip(input_image, axis=self.flip_axis).copy()
+            color_image = np.flip(color_image, axis=self.flip_axis).copy()
 
         return {'uv': input_image, 'color': color_image}
 
