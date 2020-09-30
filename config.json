@@ -44,10 +44,10 @@
 	    "mse_rgb32"
     ],
     "trainer": {
-        "epochs": 500,
+        "epochs": 150,
 
         "save_dir": "saved/",
-        "save_period": 100,
+        "save_period": 50,
         "verbosity": 2,
         
         "monitor": "min val_loss",
