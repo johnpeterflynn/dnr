@@ -120,6 +120,20 @@ class RandomCrop(object):
 
         return {'uv': input_image, 'color': color_image}
 
+
+class RandomFlip(object):
+    def __init__(self, flip_axis):
+        self.flip_axis = flip_axis
+
+    def __call__(self, sample):
+        input_image, color_image = sample['uv'], sample['color']
+        
+        input_image = np.flip(input_image, axis=self.flip_axis)
+        color_image = np.flip(color_image, axis=self.flip_axis)
+
+        return {'uv': input_image, 'color': color_image}
+
+
 class Normalize(object):
     """Normalize color images between [-1,1]."""
 
@@ -186,6 +200,7 @@ class UVDataLoader(BaseDataLoader):
         train_transforms = [
             Rescale(self.min_scale_size, self.max_scale_size),
             RandomCrop(self.size),
+            RandomFlip(flip_axis=1),
             Normalize(),
             ToTensor()
         ]
