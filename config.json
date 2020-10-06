@@ -20,7 +20,7 @@
             "batch_size": 5,
             "skip": 6,
             "slice_start": 0,
-            "slice_end": 300,
+            "slice_end": 5578,
             "net_input_height": 400,
             "net_input_width": 400,
             "min_scale_size": 400,
@@ -37,7 +37,7 @@
             "weight_decay": 0,
             "amsgrad": true
         },
-        "laplacian_weight_decay": 2.5e-6
+        "laplacian_weight_decay": 0
     },
     "loss": "photometric_reproduction_loss",
     "metrics": [
