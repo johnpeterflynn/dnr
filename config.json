@@ -42,8 +42,7 @@
     "loss": "photometric_reproduction_loss",
     "metrics": [
 	    "mse_rgb32",
-        "psnr",
-        "ssim"
+        "psnr"
     ],
     "trainer": {
         "epochs": 150,
