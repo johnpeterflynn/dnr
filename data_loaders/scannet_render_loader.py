@@ -201,7 +201,6 @@ class UVDataLoader(BaseDataLoader):
         train_transforms = [
             Rescale(self.min_scale_size, self.max_scale_size),
             RandomCrop(self.size),
-            RandomFlip(flip_axis=1),
             Normalize(),
             ToTensor()
         ]
