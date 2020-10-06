@@ -51,7 +51,7 @@ class RenderTrainer(BaseTrainer):
             output = self.model(data)
             
             # TODO: Remove explicit specification of loss and regularization functions
-            loss = self.criterion(output, target)\
+            loss = self.criterionVGG (output, target) + self.criterion(output, target)\
             + laplacian_pyramid_l2_regularization(self.model.neural_texture.get_mipmap(),
                     self.config['optimizer']['laplacian_weight_decay'])
             loss.backward()
@@ -101,7 +101,7 @@ class RenderTrainer(BaseTrainer):
 
                 output = self.model(data)
                 # TODO: Remove explicit specification of loss functions
-                loss = self.criterion(output, target)
+                loss = self.criterionVGG (output, target) + self.criterion(output, target)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
