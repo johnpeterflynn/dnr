@@ -70,19 +70,21 @@ class SSIM:
 
 def psnr(output, target):
     with torch.no_grad():
+        criterion = PSNR()
         # Convert output, target from [-1,1] to [0,255]
         rescaled_output = (output + 1.0) * 127.5
         rescaled_target = (target + 1.0) * 127.5
-        score = PSNR(rescaled_output, rescaled_target)
+        score = criterion(rescaled_output, rescaled_target)
     return score
 
 
 def ssim(output, target):
     with torch.no_grad():
+        criterion = SSIM()
         # Convert output, target from [-1,1] to [0,255]
         rescaled_output = (output + 1.0) * 127.5
         rescaled_target = (target + 1.0) * 127.5
-        score = SSIM(rescaled_output, rescaled_target)
+        score = criterion(rescaled_output, rescaled_target)
     return score
 
 
