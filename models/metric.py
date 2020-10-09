@@ -74,7 +74,7 @@ def psnr(output, target):
         # Convert output, target from [-1,1] to [0,255]
         rescaled_output = (output + 1.0) * 127.5
         rescaled_target = (target + 1.0) * 127.5
-        score = criterion(rescaled_output, rescaled_target)
+        score = criterion(rescaled_output, rescaled_target).item()
     return score
 
 
@@ -84,7 +84,7 @@ def ssim(output, target):
         # Convert output, target from [-1,1] to [0,255]
         rescaled_output = (output + 1.0) * 127.5
         rescaled_target = (target + 1.0) * 127.5
-        score = criterion(rescaled_output, rescaled_target)
+        score = criterion(rescaled_output, rescaled_target).item()
     return score
 
 
