@@ -97,7 +97,7 @@ class NeuralTexture(nn.Module):
 class DeferredNeuralRenderer(nn.Module):
     def __init__(self, input_channels, output_channels=3):
         super(DeferredNeuralRenderer, self).__init__()
-        base_channels = 64 + 32
+        base_channels = 64
         self.stride = (2, 2)
         self.kernel = 4
         self.leakynegslope = 0.2
