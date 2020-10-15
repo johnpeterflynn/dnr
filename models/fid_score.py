@@ -67,19 +67,20 @@ parser.add_argument('path', type=str, nargs=2,
 
 
 class UVPathDataset(torch.utils.data.Dataset):
-    def __init__(self, files, transforms=None):
+    def __init__(self, files, size, transforms=None):
         self.files = files
         self.transforms = transforms
+        self.height, self.width = size
 
     def __len__(self):
         return len(self.files)
 
-    def __getitem__(self, i, height, width):
+    def __getitem__(self, i):
         path = self.files[i]
         _UV_CHANNELS = 2
         with gzip.open(path, 'rb') as f:
             uv_image = np.frombuffer(f.read(), dtype='float32')
-        uv_image = np.reshape(uv_image, (height, width, _UV_CHANNELS))
+        uv_image = np.reshape(uv_image, (self.height, self.width, _UV_CHANNELS))
         uv_image = np.flip(uv_image, axis=0).copy()
         if self.transforms is not None:
             uv_image = self.transforms(uv_image)
@@ -268,11 +269,10 @@ class FIDScore:
 
 
     def compute_statistics_of_model(self, inf_path, inf_model, inf_size, batch_size):
-        inf_height, inf_width = inf_size
         inf_path = pathlib.Path(inf_path)
         # TODO: Generalize path extension
         files = list(inf_path.glob('*.gz'))
-        ds = UVPathDataset(files, inf_height, inf_width)
+        ds = UVPathDataset(files, inf_size)
         m, s = self.calculate_activation_statistics(ds, inf_model, batch_size=batch_size)
 
         return m, s
