@@ -28,9 +28,9 @@ class RenderTrainer(BaseTrainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
         # Init model for VGG loss
-        _, device_ids = self._prepare_device(self.config['n_gpu'])
-        self.criterionVGG = VGGLoss().to(self.device, non_blocking=True);
-        self.criterionVGG = torch.nn.DataParallel(self.criterionVGG, device_ids)
+        #_, device_ids = self._prepare_device(self.config['n_gpu'])
+        #self.criterionVGG = VGGLoss().to(self.device, non_blocking=True);
+        #self.criterionVGG = torch.nn.DataParallel(self.criterionVGG, device_ids)
 
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
@@ -51,9 +51,7 @@ class RenderTrainer(BaseTrainer):
             output = self.model(data)
             
             # TODO: Remove explicit specification of loss and regularization functions
-            loss = self.criterion(output, target)\
-            + laplacian_pyramid_l2_regularization(self.model.neural_texture.get_mipmap(),
-                    self.config['optimizer']['laplacian_weight_decay'])
+            loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
 
@@ -117,6 +115,7 @@ class RenderTrainer(BaseTrainer):
         #    self.writer.add_histogram(name, p, bins='auto')
         self.writer.set_step(epoch - 1, 'valid')
         log = self.valid_metrics.result(write=True)
+
         return log
 
     def _progress(self, batch_idx):
