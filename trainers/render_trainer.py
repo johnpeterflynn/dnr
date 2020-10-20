@@ -57,10 +57,9 @@ class RenderTrainer(BaseTrainer):
             loss.backward()
             self.optimizer.step()
 
-            self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
-            self.train_metrics.update('loss', loss.item())
+            self.train_metrics.update('loss', loss.item(), write=False)
             for met in self.metric_ftns:
-                self.train_metrics.update(met.__name__, met(output, target))
+                self.train_metrics.update(met.__name__, met(output, target), write=False)
 
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
@@ -76,7 +75,8 @@ class RenderTrainer(BaseTrainer):
         self._visualize_prediction(output.cpu())
         self._visualize_target(target_cpu)
 
-        log = self.train_metrics.result()
+        self.writer.set_step(epoch - 1)
+        log = self.train_metrics.result(write=True)
 
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
@@ -101,12 +101,11 @@ class RenderTrainer(BaseTrainer):
 
                 output = self.model(data)
                 # TODO: Remove explicit specification of loss functions
-                loss = self.criterionVGG (output, target) + self.criterion(output, target)
+                loss = self.criterionVGG(output, target) + self.criterion(output, target)
 
-                self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
-                self.valid_metrics.update('loss', loss.item())
+                self.valid_metrics.update('loss', loss.item(), write=False)
                 for met in self.metric_ftns:
-                    self.valid_metrics.update(met.__name__, met(output, target))
+                    self.valid_metrics.update(met.__name__, met(output, target), write=False)
 
             # Only visualize the final sample for brevity
             self._visualize_input(data_cpu)
@@ -116,7 +115,9 @@ class RenderTrainer(BaseTrainer):
         # add histogram of model parameters to the tensorboard
         #for name, p in self.model.named_parameters():
         #    self.writer.add_histogram(name, p, bins='auto')
-        return self.valid_metrics.result()
+        self.writer.set_step(epoch - 1, 'valid')
+        log = self.valid_metrics.result(write=True)
+        return log
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'
