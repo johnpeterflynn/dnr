@@ -88,8 +88,7 @@ class Rescale(object):
 
         new_h, new_w = int(new_h), int(new_w)
 
-        # TODO: Using Nearest Neighbor Resizing. Bilinear better?
-        # TODO: Anti aliasing?
+        # Nearest neighbor for input_image since we can't interpolate across discontinuities in uv coordinates
         input_image = transform.resize(input_image, (new_h, new_w), order=0)
         color_image = transform.resize(color_image, (new_h, new_w), order=1, anti_aliasing=(new_h < h))
 
@@ -223,6 +222,7 @@ class UVDataLoader(BaseDataLoader):
         #  batch size for validation to fit the unscaled data into memory.
         # Build val transformation
         val_transforms = [
+            Rescale(self.max_scale_size, self.max_scale_size),
             RandomCrop(self.size), # Added to help data fit into GPU memory.
             Normalize(),
             ToTensor()
