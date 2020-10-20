@@ -91,7 +91,7 @@ class Rescale(object):
         # TODO: Using Nearest Neighbor Resizing. Bilinear better?
         # TODO: Anti aliasing?
         input_image = transform.resize(input_image, (new_h, new_w), order=0)
-        color_image = transform.resize(color_image, (new_h, new_w), order=0)
+        color_image = transform.resize(color_image, (new_h, new_w), order=1, anti_aliasing=(new_h < h))
 
         return {'uv': input_image, 'color': color_image}
 
@@ -201,7 +201,7 @@ class UVDataLoader(BaseDataLoader):
         train_transforms = [
             Rescale(self.min_scale_size, self.max_scale_size),
             RandomCrop(self.size),
-            RandomFlip(flip_axis=1),
+            #RandomFlip(flip_axis=1),
             Normalize(),
             ToTensor()
         ]
