@@ -102,7 +102,6 @@ class DeferredNeuralRenderer(nn.Module):
         self.kernel = 4
         self.leakynegslope = 0.2
         self.leakyrelu = nn.LeakyReLU(self.leakynegslope, True)
-        self.relu = nn.ReLU(True)
         self.tanh = nn.Tanh()
 
         self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=base_channels, kernel_size=self.kernel,
@@ -142,7 +141,7 @@ class DeferredNeuralRenderer(nn.Module):
         nn.init.kaiming_normal_(self.conv2.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv3.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv4.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
-        nn.init.kaiming_normal_(self.conv5.weight, nonlinearity='relu')
+        nn.init.kaiming_normal_(self.conv5.weight, nonlinearity='leaky_relu')
 
         # TODO: Is this a good bias initialization for relu / leaky relu?
         nn.init.zeros_(self.conv1.bias)
@@ -152,10 +151,10 @@ class DeferredNeuralRenderer(nn.Module):
         nn.init.zeros_(self.conv5.bias)
 
         # TODO: Appropriate initialization for transposed convolutions?
-        nn.init.kaiming_normal_(self.conv6.weight, nonlinearity='relu')
-        nn.init.kaiming_normal_(self.conv7.weight, nonlinearity='relu')
-        nn.init.kaiming_normal_(self.conv8.weight, nonlinearity='relu')
-        nn.init.kaiming_normal_(self.conv9.weight, nonlinearity='relu')
+        nn.init.kaiming_normal_(self.conv6.weight, nonlinearity='leaky_relu')
+        nn.init.kaiming_normal_(self.conv7.weight, nonlinearity='leaky_relu')
+        nn.init.kaiming_normal_(self.conv8.weight, nonlinearity='leaky_relu')
+        nn.init.kaiming_normal_(self.conv9.weight, nonlinearity='leaky_relu')
 
         # TODO: Is this a good bias initialization for relu?
         nn.init.zeros_(self.conv6.bias)
@@ -209,7 +208,7 @@ class DeferredNeuralRenderer(nn.Module):
         #t5.record()
 
         c5 = self.conv5(n4)
-        a5 = self.relu(c5)
+        a5 = self.leakyrelu(c5)
         ##n5 = self.norm5(a5)
 
         #t6 = torch.cuda.Event(enable_timing=True)
@@ -217,7 +216,7 @@ class DeferredNeuralRenderer(nn.Module):
 
         # TODO: Verify that this is the correct order for skip connections
         c6 = self.conv6(a5, output_size=c4.shape)
-        a6 = self.relu(c6)
+        a6 = self.leakyrelu(c6)
         
         #t6_2 = torch.cuda.Event(enable_timing=True)
         #t6_2.record()
@@ -233,7 +232,7 @@ class DeferredNeuralRenderer(nn.Module):
         #t7_1.record()
 
         c7 = self.conv7(m7, output_size=c3.shape)
-        a7 = self.relu(c7)
+        a7 = self.leakyrelu(c7)
 
         #t7_2 = torch.cuda.Event(enable_timing=True)
         #t7_2.record()
@@ -249,7 +248,7 @@ class DeferredNeuralRenderer(nn.Module):
         #t8_1.record()
 
         c8 = self.conv8(m8, output_size=c2.shape)
-        a8 = self.relu(c8)
+        a8 = self.leakyrelu(c8)
         
         #t8_2 = torch.cuda.Event(enable_timing=True)
         #t8_2.record()
@@ -269,7 +268,7 @@ class DeferredNeuralRenderer(nn.Module):
         #t9_11 = torch.cuda.Event(enable_timing=True)
         #t9_11.record()
 
-        a9 = self.relu(c9)
+        a9 = self.leakyrelu(c9)
         
         #t9_2 = torch.cuda.Event(enable_timing=True)
         #t9_2.record()
