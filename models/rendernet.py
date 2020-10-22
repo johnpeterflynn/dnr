@@ -180,85 +180,85 @@ class DeferredNeuralRenderer(nn.Module):
         #t1.record()
 
         c1 = self.conv1(input)
-        a1 = self.leakyrelu(c1)
-        n1 = self.norm1(a1)
+        n1 = self.norm1(c1)
+        a1 = self.leakyrelu(n1)
 
         #t2 = torch.cuda.Event(enable_timing=True)
         #t2.record()
 
-        c2 = self.conv2(n1)
-        a2 = self.leakyrelu(c2)
-        n2 = self.norm2(a2)
+        c2 = self.conv2(a1)
+        n2 = self.norm2(c2)
+        a2 = self.leakyrelu(n2)
 
         #t3 = torch.cuda.Event(enable_timing=True)
         #t3.record()
 
-        c3 = self.conv3(n2)
-        a3 = self.leakyrelu(c3)
-        n3 = self.norm3(a3)
+        c3 = self.conv3(a2)
+        n3 = self.norm3(c3)
+        a3 = self.leakyrelu(n3)
 
         #t4 = torch.cuda.Event(enable_timing=True)
         #t4.record()
 
-        c4 = self.conv4(n3)
-        a4 = self.leakyrelu(c4)
-        n4 = self.norm4(a4)
+        c4 = self.conv4(a3)
+        n4 = self.norm4(c4)
+        a4 = self.leakyrelu(n4)
 
         #t5 = torch.cuda.Event(enable_timing=True)
         #t5.record()
 
-        c5 = self.conv5(n4)
-        a5 = self.leakyrelu(c5)
-        n5 = self.norm5(a5)
+        c5 = self.conv5(a4)
+        n5 = self.norm5(c5)
+        a5 = self.leakyrelu(n5)
 
         #t6 = torch.cuda.Event(enable_timing=True)
         #t6.record()
 
         # TODO: Verify that this is the correct order for skip connections
-        c6 = self.conv6(n5, output_size=c4.shape)
-        a6 = self.leakyrelu(c6)
+        c6 = self.conv6(a5, output_size=c4.shape)
         
         #t6_2 = torch.cuda.Event(enable_timing=True)
         #t6_2.record()
-
-        n6 = self.norm6(a6)
         
+        n6 = self.norm6(c6)
+        a6 = self.leakyrelu(n6)
+         
         #t7 = torch.cuda.Event(enable_timing=True)
         #t7.record()
 
-        m7 = torch.cat((n4, n6), dim=1)
+        m7 = torch.cat((a4, a6), dim=1)
         
         #t7_1 = torch.cuda.Event(enable_timing=True)
         #t7_1.record()
 
         c7 = self.conv7(m7, output_size=c3.shape)
-        a7 = self.leakyrelu(c7)
 
         #t7_2 = torch.cuda.Event(enable_timing=True)
         #t7_2.record()
 
-        n7 = self.norm7(a7)
-        
+        n7 = self.norm7(c7)        
+        a7 = self.leakyrelu(n7)
+
         #t8 = torch.cuda.Event(enable_timing=True)
         #t8.record()
 
-        m8 = torch.cat((n3, n7), dim=1)
+        m8 = torch.cat((a3, a7), dim=1)
         
         #t8_1 = torch.cuda.Event(enable_timing=True)
         #t8_1.record()
 
         c8 = self.conv8(m8, output_size=c2.shape)
-        a8 = self.leakyrelu(c8)
-        
+                
         #t8_2 = torch.cuda.Event(enable_timing=True)
         #t8_2.record()
 
-        n8 = self.norm8(a8)
-        
+        n8 = self.norm8(c8) 
+        a8 = self.leakyrelu(n8)
+
         #t9 = torch.cuda.Event(enable_timing=True)
         #t9.record()
 
-        m9 = torch.cat((n2, n8), dim=1)
+        m9 = torch.cat((a2, a8), dim=1)
         
         #t9_1 = torch.cuda.Event(enable_timing=True)
         #t9_1.record()
@@ -267,18 +267,18 @@ class DeferredNeuralRenderer(nn.Module):
         
         #t9_11 = torch.cuda.Event(enable_timing=True)
         #t9_11.record()
-
-        a9 = self.leakyrelu(c9)
+        
+        n9 = self.norm9(c9)
         
         #t9_2 = torch.cuda.Event(enable_timing=True)
         #t9_2.record()
         
-        n9 = self.norm9(a9)
+        a9 = self.leakyrelu(n9)
         
         #t10 = torch.cuda.Event(enable_timing=True)
         #t10.record()
 
-        m10 = torch.cat((a1, n9), dim=1)
+        m10 = torch.cat((a1, a9), dim=1)
         
         #t10_1 = torch.cuda.Event(enable_timing=True)
         #t10_1.record()
