@@ -141,7 +141,7 @@ class DeferredNeuralRenderer(nn.Module):
         nn.init.kaiming_normal_(self.conv2.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv3.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
         nn.init.kaiming_normal_(self.conv4.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
-        nn.init.kaiming_normal_(self.conv5.weight, nonlinearity='leaky_relu')
+        nn.init.kaiming_normal_(self.conv5.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
 
         # TODO: Is this a good bias initialization for relu / leaky relu?
         nn.init.zeros_(self.conv1.bias)
@@ -151,10 +151,10 @@ class DeferredNeuralRenderer(nn.Module):
         nn.init.zeros_(self.conv5.bias)
 
         # TODO: Appropriate initialization for transposed convolutions?
-        nn.init.kaiming_normal_(self.conv6.weight, nonlinearity='leaky_relu')
-        nn.init.kaiming_normal_(self.conv7.weight, nonlinearity='leaky_relu')
-        nn.init.kaiming_normal_(self.conv8.weight, nonlinearity='leaky_relu')
-        nn.init.kaiming_normal_(self.conv9.weight, nonlinearity='leaky_relu')
+        nn.init.kaiming_normal_(self.conv6.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
+        nn.init.kaiming_normal_(self.conv7.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
+        nn.init.kaiming_normal_(self.conv8.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
+        nn.init.kaiming_normal_(self.conv9.weight, a=self.leakynegslope, nonlinearity='leaky_relu')
 
         # TODO: Is this a good bias initialization for relu?
         nn.init.zeros_(self.conv6.bias)
