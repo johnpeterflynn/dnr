@@ -106,7 +106,7 @@ class DeferredNeuralRenderer(nn.Module):
 
         self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=base_channels, kernel_size=self.kernel,
                                stride=self.stride, padding=1)
-        self.norm1 = nn.InstanceNorm2d(num_features=base_channels)
+        #self.norm1 = nn.InstanceNorm2d(num_features=base_channels)
         self.conv2 = nn.Conv2d(in_channels=base_channels, out_channels=base_channels * 2, kernel_size=self.kernel,
                                stride=self.stride, padding=1)
         self.norm2 = nn.InstanceNorm2d(num_features=base_channels * 2)
@@ -118,7 +118,7 @@ class DeferredNeuralRenderer(nn.Module):
         self.norm4 = nn.InstanceNorm2d(num_features=base_channels * 8)
         self.conv5 = nn.Conv2d(in_channels=base_channels * 8, out_channels=base_channels * 8, kernel_size=self.kernel,
                                stride=self.stride, padding=1)
-        self.norm5 = nn.InstanceNorm2d(num_features=base_channels * 8)
+        #self.norm5 = nn.InstanceNorm2d(num_features=base_channels * 8)
 
         self.conv6 = nn.ConvTranspose2d(in_channels=base_channels * 8, out_channels=base_channels * 8, kernel_size=self.kernel,
                                         stride=self.stride, padding=1)
@@ -181,12 +181,12 @@ class DeferredNeuralRenderer(nn.Module):
 
         c1 = self.conv1(input)
         a1 = self.leakyrelu(c1)
-        n1 = self.norm1(a1)
+        ##n1 = self.norm1(a1)
 
         #t2 = torch.cuda.Event(enable_timing=True)
         #t2.record()
 
-        c2 = self.conv2(n1)
+        c2 = self.conv2(a1)
         a2 = self.leakyrelu(c2)
         n2 = self.norm2(a2)
 
@@ -209,13 +209,13 @@ class DeferredNeuralRenderer(nn.Module):
 
         c5 = self.conv5(n4)
         a5 = self.leakyrelu(c5)
-        n5 = self.norm5(a5)
+        ##n5 = self.norm5(a5)
 
         #t6 = torch.cuda.Event(enable_timing=True)
         #t6.record()
 
         # TODO: Verify that this is the correct order for skip connections
-        c6 = self.conv6(n5, output_size=c4.shape)
+        c6 = self.conv6(a5, output_size=c4.shape)
         a6 = self.leakyrelu(c6)
         
         #t6_2 = torch.cuda.Event(enable_timing=True)
