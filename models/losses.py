@@ -65,7 +65,7 @@ class VGGLoss(torch.nn.Module):
         self.model = VGG16()
         self.criterionL2 = torch.nn.MSELoss(reduction='mean')
 
-    def forward(self, fake, target, content_weight=1.0, style_weight=1.0):
+    def forward(self, fake, target, content_weight=0.1, style_weight=1.0):
         vgg_fake = self.model(fake)
         vgg_target = self.model(target)
 
