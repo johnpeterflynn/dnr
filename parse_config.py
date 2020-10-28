@@ -1,5 +1,6 @@
 import os
 import logging
+from git import Repo
 from pathlib import Path
 from functools import reduce, partial
 from operator import getitem
@@ -30,6 +31,11 @@ class ConfigParser:
             run_id = datetime.now().strftime(r'%m%d_%H%M%S')
         self._save_dir = save_dir / 'models' / exper_name / run_id
         self._log_dir = save_dir / 'log' / exper_name / run_id
+
+        # TODO: Generate repo tag from train.py
+        # Add a tag to the current git commit
+        repo = Repo('.')
+        repo.create_tag('{}_{}'.format(exper_name, run_id))
 
         # make directory for saving checkpoints and log.
         exist_ok = run_id == ''
