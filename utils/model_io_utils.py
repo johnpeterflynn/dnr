@@ -5,19 +5,71 @@ import gzip
 import json
 import os
 import re
-from models import RenderNet
+import models as module_arch
+from datetime import datetime
+from parse_config import ConfigParser
+from pathlib import Path
+
 
 # Load a trained model using its best weights unless otherwise specified
-def load_trained_model(train_id, logs='./saved', checkpoint_name='model_best'):
-    model_path = os.path.join(logs, 'models/DNR', train_id)
+def load_model_config(model_name, train_id, logs='./saved'):
+    model_path = os.path.join(logs, 'models', model_name, train_id)
 
     # Load config file
     config_file = os.path.join(model_path, "config.json")
-    if config_file:
-        with open(config_file, 'r') as f:
-            config = json.load(f)
+    assert os.path.isfile(config_file)
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+
+    return config
+
+
+# load all models by train id
+def load_trained_models(train_ids, logs='./saved', model_name=None, config=None):
+    models = {}
+    epochs = {}
+    for train_id in train_ids:
+        models[train_id], epochs[train_id] = load_trained_model(train_id, logs, model_name, config)
+
+    return models, epochs
+
+
+def load_trained_model_by_path(checkpoint_path, config):
+    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    loaded_epoch = checkpoint['epoch']
+
+    print('loaded', checkpoint_path, 'from epoch', loaded_epoch)
+
+    # Load model with parameters from config file
+    config_parser = ConfigParser(config)
+    model = config_parser.init_obj('arch', module_arch)
+
+    # TODO: WARNING: Leaving some mipmap layer weights unassigned might lead to erroneous
+    #  results (maybe they're not set to zero by default)
+    # Assign model weights and set to eval (not train) mode
+    #model.load_state_dict(checkpoint['state_dict'], strict=(not zero_other_mipmaps))
+    model.load_state_dict(checkpoint['state_dict'])
+    model.eval()
+
+    return model, loaded_epoch
+
+
+def load_trained_model(train_id, logs='./saved', model_name=None,
+        checkpoint_name='model_best', config=None):
+    assert config is not None or model_name is not None, 'Must provide a config file or model name'
+
+    if config is None:
+        config = load_model_config(model_name, train_id, logs)
+    
+    if model_name is None:
+        model_name = config['name']
+    elif model_name != config['name']:
+        print('Warning: Provided model name', model_name,
+                'differs from config file name', config['name'],
+                'using provided model name')
 
     # Load model weights
+    model_path = os.path.join(logs, 'models', model_name, train_id)
     checkpoint_path = os.path.join(model_path, checkpoint_name) + '.pth'
 
     if not os.path.isfile(checkpoint_path):
@@ -29,80 +81,53 @@ def load_trained_model(train_id, logs='./saved', checkpoint_name='model_best'):
 
         checkpoint_path = max(pose_files, key=extract_epoch)
 
-    print('loaded:', checkpoint_path)
-
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
-
-    loaded_epoch = checkpoint['epoch'] + 1
-    print('Loaded checkpoint from epoch', loaded_epoch)
-
-    # Handling loading of models from different versions will be tricky.
-    # Eventually might need to check models out from git repo. For now,
-    # use these fixes.
-    if 'mipmap_levels' in config['arch']['args']:
-        mipmap_levels = config['arch']['args']['mipmap_levels']
-        zero_other_mipmaps = False
-        print('contains mipmap:', mipmap_levels)
-    else:
-        mipmap_levels = 1
-        checkpoint['state_dict']['neural_texture.mipmap.0'] = checkpoint['state_dict'].pop('neural_texture.texture')
-        zero_other_mipmaps = True
-        print('Warning: {} weights from old model version with only one mipmap layer'.format(train_id))
-
-    # Ahh! We have to hack the weights since ParameterList isn't accepted by TorchScript
-    if 'neural_texture.mipmap.0' in checkpoint['state_dict']:
-        print('Warning: {} mipmap from old model version that used ParameterList or a single layer'.format(train_id))
-        for i in range(mipmap_levels):
-            checkpoint['state_dict']['neural_texture.mipmap_{}'.format(i)] = checkpoint['state_dict'].pop(
-                'neural_texture.mipmap.{}'.format(i))
-
-    # Load model with parameters from config file
-    model = RenderNet(config['arch']['args']['texture_size'],
-                      config['arch']['args']['texture_depth'],
-                      mipmap_levels)
-
-    # TODO: WARNING: Leaving some mipmap layer weights unassigned might lead to erroneous
-    #  results (maybe they're not set to zero by default)
-    # Assign model weights and set to eval (not train) mode
-    model.load_state_dict(checkpoint['state_dict'], strict=(not zero_other_mipmaps))
-    model.eval()
-
-    return model, loaded_epoch
-
-
-# load all models by train id
-def load_trained_models(train_ids, logs='./saved'):
-    models = {}
-    for train_id in train_ids:
-        models[train_id], _ = load_trained_model(train_id, logs=logs)
-
-    return models
+    return load_trained_model_by_path(checkpoint_path, config)
 
 
 # Cereate a libtorch script file containing the model that can be loaded into C++
-def create_libtorch_script(train_id, logs, checkpoint_name='model_best', model_script_folder='./libtorch-models'):
+def create_libtorch_script(train_id, logs, model_name, checkpoint_name='model_best',
+        model_script_folder='./libtorch-models'):
     model, loaded_epoch = load_trained_model(train_id, logs=logs, checkpoint_name=checkpoint_name)
+    _create_libtorch_script_from_model(model, traid_id, model_name, checkpoint_name)
+
+
+def _create_libtorch_script_from_model(model, epochs, train_id, model_name, checkpoint_name,
+        model_script_folder):
     sm = torch.jit.script(model)
-    model_script_name = 'DNR-{}-{}-epoch-{}_model.pt'.format(train_id, checkpoint_name, loaded_epoch)
+    model_script_name = '{}-{}-{}-{}-{}.pt'.format(model_name, train_id, checkpoint_name, 
+            epochs, datetime.now().strftime(r'%m%d_%H%M%S'))
     model_script_path = os.path.join(model_script_folder, model_script_name)
-    print(model_script_path)
+    print('Created libtorch script', model_script_path)
+    
+    save_dir = Path(model_script_folder)
+    save_dir.mkdir(parents=True, exist_ok=True)
     sm.save(model_script_path)
 
 
+def create_all_libtorch_scripts(train_id, logs, model_name, model_script_folder='./libtorch-models'):
+    model_paths = get_trained_model_paths(train_id, logs, model_name)
+    config = load_model_config(model_name, train_id, logs)
+    for path in model_paths:
+        model, epochs = load_trained_model_by_path(path, config)
+
+        s = re.findall("([^/]+)\.pth", path)
+        assert s is not None, 'file in path {} does not exist'.format(path)
+        checkpoint_name = s[0]
+        _create_libtorch_script_from_model(model, epochs, train_id, model_name, checkpoint_name,
+                model_script_folder)
+
+
 # Load a libtorch script file
-def load_libtorch_script(train_id=None, model_script_name=None, checkpoint_name='model_best',
-                         model_script_folder='./libtorch-models'):
-    assert train_id is not None or model_script_name is not None
-
-    if model_script_name is None:
-        model_script_name = 'DNR-{}-{}_model.pt'.format(train_id, checkpoint_name)
-
-    model_script_path = os.path.join(model_script_folder, model_script_name)
-
-    print(model_script_path)
+def load_libtorch_script(model_script_path):
     sm_loaded = torch.jit.load(model_script_path)
     sm_loaded.eval()
+    print('Loaded libtorch script', model_script_path)
     return sm_loaded
+
+
+def get_trained_model_paths(train_id, logs, model_name):
+    files = os.path.join(logs, 'models', model_name, train_id, '*.pth')
+    return get_sorted_files(files)
 
 
 def get_sorted_files(files):
