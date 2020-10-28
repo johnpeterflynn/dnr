@@ -21,9 +21,9 @@
             "skip": 6,
             "slice_start": 0,
             "slice_end":5578,
-            "net_input_height": 512,
-            "net_input_width": 512,
-            "min_scale_size": 512,
+            "net_input_height": 256,
+            "net_input_width": 256,
+            "min_scale_size": 256,
             "max_scale_size": 512,
             "num_ignore_border_pixels_lr": 11,
             "num_ignore_border_pixels_tb": 8,
@@ -47,7 +47,7 @@
 	    "psnr"
     ],
     "trainer": {
-        "epochs": 500,
+        "epochs": 400,
 
         "save_dir": "saved/",
         "save_period": 50,
