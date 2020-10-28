@@ -44,6 +44,8 @@ from scipy import linalg
 from torch.nn.functional import adaptive_avg_pool2d
 from PIL import Image
 
+from skimage import io, transform, img_as_float32
+
 try:
     from tqdm import tqdm
 except ImportError:
@@ -67,10 +69,11 @@ parser.add_argument('path', type=str, nargs=2,
 
 
 class UVPathDataset(torch.utils.data.Dataset):
-    def __init__(self, files, size, transforms=None):
+    def __init__(self, files, size, scale_size=None, transforms=None):
         self.files = files
         self.transforms = transforms
         self.height, self.width = size
+        self.scale_size = scale_size
 
     def __len__(self):
         return len(self.files)
@@ -82,26 +85,83 @@ class UVPathDataset(torch.utils.data.Dataset):
             uv_image = np.frombuffer(f.read(), dtype='float32')
         uv_image = np.reshape(uv_image, (self.height, self.width, _UV_CHANNELS))
         uv_image = np.flip(uv_image, axis=0).copy()
-        if self.transforms is not None:
-            uv_image = self.transforms(uv_image)
+        #if self.transforms is not None:
+        #    uv_image = self.transforms(uv_image)
+        if self.scale_size is not None:
+            uv_image = self._scale(uv_image)
         uv_image = torch.from_numpy(uv_image)
         return uv_image
 
+    def _scale(self, sample):
+        h, w = sample.shape[:2]
+
+        output_size = self.scale_size
+
+        if isinstance(output_size, int):
+            if h > w:
+                new_h, new_w = output_size * h / w, output_size
+            else:
+                new_h, new_w = output_size, output_size * w / h
+        else:
+            new_h, new_w = output_size
+
+        new_h, new_w = int(new_h), int(new_w)
+
+        # Nearest neighbor for input_image since we can't interpolate across discontinuities in uv coordinates
+        sample = transform.resize(sample, (new_h, new_w), order=0)
+
+        return sample
+
 
 class ImagesPathDataset(torch.utils.data.Dataset):
-    def __init__(self, files, transforms=None):
+    def __init__(self, files, scale_size=None, transforms=None):
         self.files = files
         self.transforms = transforms
+        self.scale_size = scale_size
 
     def __len__(self):
         return len(self.files)
 
     def __getitem__(self, i):
         path = self.files[i]
-        img = Image.open(path).convert('RGB')
-        if self.transforms is not None:
-            img = self.transforms(img)
+        # TODO: Is there s single library to use both for loading images and raw files?
+        img = io.imread(path)
+        img = np.array(img)
+
+        #if self.transforms is not None:
+        #    img = self.transforms(img)
+
+        if self.scale_size is not None:
+            img = self._scale(img)
+        img = self._normalize(img)
+        img = img.transpose((2, 0, 1))
+        img = torch.from_numpy(img)
         return img
+
+    def _scale(self, sample):
+        h, w = sample.shape[:2]
+
+        output_size = self.scale_size
+
+        if isinstance(output_size, int):
+            if h > w:
+                new_h, new_w = output_size * h / w, output_size
+            else:
+                new_h, new_w = output_size, output_size * w / h
+        else:
+            new_h, new_w = output_size
+
+        new_h, new_w = int(new_h), int(new_w)
+
+        sample = transform.resize(sample, (new_h, new_w), order=1, anti_aliasing=(new_h < h))
+
+        return sample
+
+    def _normalize(self, sample):
+        sample = img_as_float32(sample)
+        sample = (sample * 2.0) - 1
+
+        return sample
 
 
 class FIDScore:
@@ -120,18 +180,13 @@ class FIDScore:
         self.model.eval()
 
 
-    def get_activations(self, dataset, inf_model=None, batch_size=50):
+    def get_activations(self, dataloader, inf_model=None):
         """Calculates the activations of the pool_3 layer for all images.
 
         Params:
-        -- dataset     : Dataset containing images or inputs to inf_model
+        -- dataloader  : Dataloader containing images or inputs to inf_model
         -- inf_model   : Model in which to input the dataset. Use dataset directly
                          if inf_model is None.
-        -- batch_size  : Batch size of images for the model to process at once.
-                         Make sure that the number of samples is a multiple of
-                         the batch size, otherwise some samples are ignored. This
-                         behavior is retained to match the original FID score
-                         implementation.
 
         Returns:
         -- A numpy array of dimension (num images, dims) that contains the
@@ -139,26 +194,17 @@ class FIDScore:
            query tensor.
         """
 
-        if batch_size > len(dataset):
-            print(('Warning: batch size is bigger than the data size. '
-                   'Setting batch size to data size'))
-            batch_size = len(dataset)
-
-        dl = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
-                                         drop_last=False, num_workers=cpu_count())
-
-        pred_arr = np.empty((len(dataset), self.dims))
+        pred_arr = np.empty((len(dataloader.dataset), self.dims))
 
         start_idx = 0
 
-        for batch in tqdm(dl):
+        for batch in tqdm(dataloader):
             batch = batch.to(self.device)
 
             # Use output of inf_model instead of batch if an inf_model is given.
-            if inf_model is not None:
-                batch = inf_model(batch)
-            
             with torch.no_grad():
+                if inf_model is not None:
+                    batch = inf_model(batch)
                 pred = self.model(batch)[0]
 
             # If model output is not scalar, apply global spatial average pooling.
@@ -232,15 +278,12 @@ class FIDScore:
                 np.trace(sigma2) - 2 * tr_covmean)
 
 
-    def calculate_activation_statistics(self, dataset, inf_model=None, batch_size=50):
+    def calculate_activation_statistics(self, dataloader, inf_model=None):
         """Calculation of the statistics used by the FID.
         Params:
-        -- dataset     : Dataset containing images or inputs to inf_model
+        -- dataloader  : Dataloader containing images or inputs to inf_model
         -- inf_model   : Model in which to input the dataset. Use dataset directly
                          if inf_model is None.
-        -- batch_size  : The images numpy array is split into batches with
-                         batch size batch_size. A reasonable batch size
-                         depends on the hardware.
 
         Returns:
         -- mu    : The mean over samples of the activations of the pool_3 layer of
@@ -248,10 +291,37 @@ class FIDScore:
         -- sigma : The covariance matrix of the activations of the pool_3 layer of
                    the inception model.
         """
-        act = self.get_activations(dataset, inf_model, batch_size)
+        act = self.get_activations(dataloader, inf_model)
         mu = np.mean(act, axis=0)
         sigma = np.cov(act, rowvar=False)
         return mu, sigma
+
+
+    def calculate_activation_statistics_from_dataset(self, dataset, inf_model=None,
+            batch_size=50):
+        """Calculation of the statistics used by the FID using the default dataloader.
+        Params:
+        -- dataset     : Dataset containing images or inputs to inf_model
+        -- inf_model   : Model in which to input the dataset. Use dataset directly
+                         if inf_model is None.
+
+        Returns:
+        -- mu    : The mean over samples of the activations of the pool_3 layer of
+                   the inception model.
+        -- sigma : The covariance matrix of the activations of the pool_3 layer of
+                   the inception model.
+        """
+        if batch_size > len(dataset):
+            print(('Warning: batch size is bigger than the data size. '
+                   'Setting batch size to data size'))
+            batch_size = len(dataset)
+
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+                drop_last=False, num_workers=cpu_count())
+        
+        m, s = self.calculate_activation_statistics(dataloader, inf_model)
+
+        return m, s
 
 
     def compute_statistics_of_path(self, path, batch_size):
@@ -263,17 +333,17 @@ class FIDScore:
             path = pathlib.Path(path)
             files = list(path.glob('*.jpg')) + list(path.glob('*.png'))
             ds = ImagesPathDataset(files, transforms=TF.ToTensor())
-            m, s = self.calculate_activation_statistics(ds, batch_size=batch_size)
+            m, s = self.calculate_activation_statistics_from_dataset(ds, batch_size=batch_size)
 
         return m, s
 
 
-    def compute_statistics_of_model(self, inf_path, inf_model, inf_size, batch_size):
+    def compute_statistics_of_model(self, inf_path, inf_model,  inf_size, batch_size):
         inf_path = pathlib.Path(inf_path)
         # TODO: Generalize path extension
         files = list(inf_path.glob('*.gz'))
         ds = UVPathDataset(files, inf_size)
-        m, s = self.calculate_activation_statistics(ds, inf_model, batch_size=batch_size)
+        m, s = self.calculate_activation_statistics_from_dataset(ds, inf_model, batch_size)
 
         return m, s
 
@@ -302,6 +372,18 @@ class FIDScore:
 
         m1, s1 = self.compute_statistics_of_path(truth_path, batch_size)
         m2, s2 = self.compute_statistics_of_model(inf_path, inf_model, inf_size, batch_size)
+        fid_value = self.calculate_frechet_distance(m1, s1, m2, s2)
+
+        return fid_value
+
+
+    def calculate_fid_given_dataloader_and_model(self, truth_dataloader, inf_model,
+            inf_dataloader):
+        """Calculates the FID given a dataloader containing ground truth data, a model
+        for inference and a dataloader to feed into the model
+        """
+        m1, s1 = self.calculate_activation_statistics(truth_dataloader)
+        m2, s2 = self.calculate_activation_statistics(inf_model, inf_dataloader)
         fid_value = self.calculate_frechet_distance(m1, s1, m2, s2)
 
         return fid_value
