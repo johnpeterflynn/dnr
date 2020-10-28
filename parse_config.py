@@ -10,7 +10,7 @@ from utils import read_json, write_json
 
 
 class ConfigParser:
-    def __init__(self, config, resume=None, modification=None, run_id=None):
+    def __init__(self, config, resume=None, modification=None, run_id=None, dry_run=False):
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
         and logging module.
@@ -22,6 +22,7 @@ class ConfigParser:
         # load config file and apply modification
         self._config = _update_config(config, modification)
         self.resume = resume
+        self.dry_run = dry_run
 
         # set save_dir where trained model and log will be saved.
         save_dir = Path(self.config['trainer']['save_dir'])
@@ -32,10 +33,11 @@ class ConfigParser:
         self._save_dir = save_dir / 'models' / exper_name / run_id
         self._log_dir = save_dir / 'log' / exper_name / run_id
 
-        # TODO: Generate repo tag from train.py
-        # Add a tag to the current git commit
-        repo = Repo('.')
-        repo.create_tag('{}_{}'.format(exper_name, run_id))
+        if not self.dry_run:
+            # TODO: Generate repo tag from train.py
+            # Add a tag to the current git commit
+            repo = Repo('.')
+            repo.create_tag('{}_{}'.format(exper_name, run_id))
 
         # make directory for saving checkpoints and log.
         exist_ok = run_id == ''
@@ -86,7 +88,7 @@ class ConfigParser:
 
         # parse custom cli options into dictionary
         modification = {opt.target : getattr(args, _get_opt_name(opt.flags)) for opt in options}
-        return cls(config, resume, modification)
+        return cls(config, resume, modification, dry_run=args.dry_run)
 
     def init_obj(self, name, module, *args, **kwargs):
         """
@@ -141,6 +143,7 @@ class ConfigParser:
     @property
     def log_dir(self):
         return self._log_dir
+
 
 # helper functions to update config dict with custom cli options
 def _update_config(config, modification):

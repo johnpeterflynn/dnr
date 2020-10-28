@@ -107,11 +107,12 @@ class BaseTrainer:
                                      "Training stops.".format(self.early_stop))
                     break
 
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch)
+            if not self.config.dry_run:
+                if epoch % self.save_period == 0:
+                    self._save_checkpoint(epoch)
 
-            if best:
-                self._save_best(epoch)
+                if best:
+                    self._save_best(epoch)
 
     def _prepare_device(self, n_gpu_use):
         """
