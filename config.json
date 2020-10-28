@@ -25,6 +25,8 @@
             "net_input_width": 512,
             "min_scale_size": 512,
             "max_scale_size": 512,
+            "num_ignore_border_pixels_lr": 11,
+            "num_ignore_border_pixels_tb": 8,
             "shuffle": true,
             "compressed_input": true,
             "num_workers": 8

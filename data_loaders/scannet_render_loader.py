@@ -94,6 +94,31 @@ class Rescale(object):
 
         return {'uv': input_image, 'color': color_image}
 
+
+class BorderCrop(object):
+    def __init__(self, crop_pixels_lr, crop_pixels_tb):
+        self.crop_pixels_lr = crop_pixels_lr
+        self.crop_pixels_tb = crop_pixels_tb
+
+    def __call__(self, sample):
+        input_image, color_image = sample['uv'], sample['color']
+
+        # Assuming input_image and color_image are the same shape
+        h, w, _ = color_image.shape
+
+        # Get a valid starting and end positions
+        h_start = self.crop_pixels_tb
+        w_start = self.crop_pixels_lr
+        h_end = h - self.crop_pixels_tb
+        w_end = w - self.crop_pixels_lr
+
+        # Crop the input and target
+        input_image = input_image[h_start:h_end, w_start:w_end, :]
+        color_image = color_image[h_start:h_end, w_start:w_end, :]
+
+        return {'uv': input_image, 'color': color_image}
+
+
 class RandomCrop(object):
     def __init__(self, crop_size):
         assert isinstance(crop_size, tuple)
@@ -167,13 +192,15 @@ class ToTensor(object):
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
     def __init__(self, data_dir, uv_folder_name, color_folder_name, data_select_file, batch_size, shuffle, skip,
-                 net_input_height, net_input_width, min_scale_size=None, max_scale_size=None, slice_start=None,
-                 slice_end=None, slice_step=None, compressed_input=False,
-                 num_workers=1, training=True):
+                 net_input_height, net_input_width, min_scale_size=None, max_scale_size=None,
+                 num_ignore_border_pixels_lr=0, num_ignore_border_pixels_tb=0, slice_start=None, slice_end=None,
+                 slice_step=None, compressed_input=False, num_workers=1, training=True):
 
         self.data_dir = data_dir
         self.skip = skip
         self.size = (net_input_height, net_input_width)
+        self.num_ignore_border_pixels_lr = num_ignore_border_pixels_lr
+        self.num_ignore_border_pixels_tb = num_ignore_border_pixels_tb
 
         # Default min and max scaling size to the smaller image side
         smaller_side_size = min(net_input_height, net_input_width)
@@ -198,6 +225,7 @@ class UVDataLoader(BaseDataLoader):
 
         # Build train transformation
         train_transforms = [
+            BorderCrop(self.num_ignore_border_pixels_lr, self.num_ignore_border_pixels_tb),
             Rescale(self.min_scale_size, self.max_scale_size),
             RandomCrop(self.size),
             #RandomFlip(flip_axis=1),
@@ -222,6 +250,7 @@ class UVDataLoader(BaseDataLoader):
         #  batch size for validation to fit the unscaled data into memory.
         # Build val transformation
         val_transforms = [
+            BorderCrop(self.num_ignore_border_pixels_lr, self.num_ignore_border_pixels_tb),
             Rescale(self.max_scale_size, self.max_scale_size),
             RandomCrop(self.size), # Added to help data fit into GPU memory.
             Normalize(),
