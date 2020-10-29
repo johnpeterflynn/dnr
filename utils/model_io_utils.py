@@ -41,7 +41,7 @@ def load_trained_model_by_path(checkpoint_path, config):
     print('loaded', checkpoint_path, 'from epoch', loaded_epoch)
 
     # Load model with parameters from config file
-    config_parser = ConfigParser(config)
+    config_parser = ConfigParser(config, dry_run=True)
     model = config_parser.init_obj('arch', module_arch)
 
     # TODO: WARNING: Leaving some mipmap layer weights unassigned might lead to erroneous
