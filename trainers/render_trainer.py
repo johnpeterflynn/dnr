@@ -28,9 +28,9 @@ class RenderTrainer(BaseTrainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
         # Init model for VGG loss
-        _, device_ids = self._prepare_device(self.config['n_gpu'])
-        self.criterionVGG = VGGLoss().to(self.device, non_blocking=True);
-        self.criterionVGG = torch.nn.DataParallel(self.criterionVGG, device_ids)
+        #_, device_ids = self._prepare_device(self.config['n_gpu'])
+        #self.criterionVGG = VGGLoss().to(self.device, non_blocking=True);
+        #self.criterionVGG = torch.nn.DataParallel(self.criterionVGG, device_ids)
 
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
@@ -51,7 +51,8 @@ class RenderTrainer(BaseTrainer):
             output = self.model(data)
             
             # TODO: Remove explicit specification of loss and regularization functions
-            loss = self.criterionVGG(output, target) + self.criterion(output, target)
+            #loss = self.criterionVGG(output, target) + self.criterion(output, target)
+            loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
 
@@ -99,7 +100,8 @@ class RenderTrainer(BaseTrainer):
 
                 output = self.model(data)
                 # TODO: Remove explicit specification of loss functions
-                loss = self.criterionVGG(output, target) + self.criterion(output, target)
+                #loss = self.criterionVGG(output, target) + self.criterion(output, target)
+                loss = self.criterion(output, target)
 
                 self.valid_metrics.update('loss', loss.item(), write=False)
                 for met in self.metric_ftns:
