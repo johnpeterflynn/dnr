@@ -47,8 +47,9 @@ class ConfigParser:
             # save updated config file to the checkpoint dir
             write_json(self.config, self.save_dir / 'config.json')
 
-        # configure logging module
-        setup_logging(self.log_dir)
+            # configure logging module
+            setup_logging(self.log_dir)
+        
         self.log_levels = {
             0: logging.WARNING,
             1: logging.INFO,
