@@ -7,7 +7,7 @@ import models.losses as module_loss
 import models.metric as module_metric
 import models as module_arch
 from parse_config import ConfigParser
-from trainers import RenderTrainer
+from trainers import GANTrainer
 import subprocess
 
 
@@ -58,7 +58,7 @@ def main(config):
         optimizer.add_param_group({'params': layer, 'weight_decay':
             config['optimizer']['laplacian_weight_decay'] * ((2 ** (len(mipmap) - i - 1)) - 1)})
 
-    trainer = RenderTrainer(model, criterion, metrics, optimizer,
+    trainer = GANTrainer(model, criterion, metrics, optimizer,
                       config=config,
                       data_loader=data_loader,
                       valid_data_loader=valid_data_loader)
