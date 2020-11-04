@@ -40,7 +40,7 @@ class GANTrainer(BaseTrainer):
         #self.optimizer_G = torch.optim.Adam(self.model.parameters(), lr=config['optimizer']['args']['lr'], betas=(0.5, 0.999))
         self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=config['optimizer']['args']['lr'], betas=(0.5, 0.999))
 
-        self.train_metrics = MetricTracker('loss_G', 'loss_D', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.train_metrics = MetricTracker('loss_G', 'loss_D', 'loss_G_only', 'loss_other', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
 
@@ -102,6 +102,8 @@ class GANTrainer(BaseTrainer):
         # Second, G(A) = B
         # TODO: Find good value for lambda_L1
         self.loss_G_other = self.criterion(self.fake_color, self.real_color) #* 10.0#self.opt.lambda_L1
+        self.train_metrics.update('loss_G_only', self.loss_G_GAN.item(), write=False)
+        self.train_metrics.update('loss_other', self.loss_G_other.item(), write=False)
         print('Generator Loss Gan, other:', self.loss_G_GAN.item(), self.loss_G_other.item())
         # combine loss and calculate gradients
         self.loss_G = self.loss_G_GAN + self.loss_G_other
