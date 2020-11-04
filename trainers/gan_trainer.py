@@ -104,7 +104,6 @@ class GANTrainer(BaseTrainer):
         self.loss_G_other = self.criterion(self.fake_color, self.real_color) #* 10.0#self.opt.lambda_L1
         self.train_metrics.update('loss_G_only', self.loss_G_GAN.item(), write=False)
         self.train_metrics.update('loss_other', self.loss_G_other.item(), write=False)
-        print('Generator Loss Gan, other:', self.loss_G_GAN.item(), self.loss_G_other.item())
         # combine loss and calculate gradients
         self.loss_G = self.loss_G_GAN + self.loss_G_other
         self.loss_G.backward()
@@ -122,9 +121,6 @@ class GANTrainer(BaseTrainer):
             self.real_color = real_color_cpu.to(self.device, non_blocking=True)
 
             self._optimize_parameters()
-
-            print('Loss G', self.loss_G.item())
-            print('Loss D', self.loss_D.item())
 
             self.train_metrics.update('loss_G', self.loss_G.item(), write=False)
             self.train_metrics.update('loss_D', self.loss_D.item(), write=False)
