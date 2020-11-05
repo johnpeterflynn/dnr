@@ -54,6 +54,10 @@ class GANTrainer(BaseTrainer):
         self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=config['optimizer']['args']['lr'], betas=(0.5, 0.999))
         self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=config['optimizer']['args']['lr'], betas=(0.5, 0.999))
 
+        # Lazy loading since we're not creating these nets in BaseTrainer. Order in these lists must bethe same as
+        # in _lazy_resume_checkpoint()
+        self._lazy_resume_checkpoint([self.netG, self.netD], [self.optimizer_G, self.optimizer_D])
+
         self.train_metrics = MetricTracker('loss_D_fake', 'loss_D_real', 'loss_G', 'loss_D', 'loss_G_only', 'loss_other', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
@@ -209,6 +213,72 @@ class GANTrainer(BaseTrainer):
         log = self.valid_metrics.result(write=True)
 
         return log
+
+    def _save_checkpoint(self, epoch):
+        """
+        Saving checkpoints
+        :param epoch: current epoch number
+        :param log: logging information of the epoch
+        """
+        arch_G = type(self.netG).__name__
+        arch_D = type(self.netD).__name__
+        state = {
+            'archs': [arch_G, arch_D],
+            'epoch': epoch,
+            'state_dicts': [self.netG.state_dict(), self.netD.state_dict()],
+            'optimizer_state_dicts': [self.optimizer_G.state_dict(), self.optimizer_D.state_dict()],
+            'monitor_best': self.mnt_best,
+            'config': self.config
+        }
+        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+        torch.save(state, filename)
+        self.logger.info("Saving checkpoint: {} ...".format(filename))
+
+    def _save_best(self, epoch):
+        """
+        Saving checkpoints
+        :param epoch: current epoch number
+        :param log: logging information of the epoch
+        """
+        arch_G = type(self.netG).__name__
+        arch_D = type(self.netD).__name__
+        state = {
+            'archs': [arch_G, arch_D],
+            'epoch': epoch,
+            'state_dicts': [self.netG.state_dict(), self.netD.state_dict()],
+            'optimizer_state_dicts': [self.optimizer_G.state_dict(), self.optimizer_D.state_dict()],
+            'monitor_best': self.mnt_best,
+            'config': self.config
+        }
+        best_path = str(self.checkpoint_dir / 'model_best.pth')
+        torch.save(state, best_path)
+        self.logger.info("Saving current best: model_best.pth ...")
+
+    def _resume_checkpoint(self, resume_path):
+        """
+        Resume from saved checkpoints
+        :param resume_path: Checkpoint path to be resumed
+        """
+        self.resume_path = str(resume_path)
+
+    # TODO: PROBLEM: base class tries to resume checkpoint before derived class creates models
+    def _lazy_resume_checkpoint(self, models, optimizers):
+        self.logger.info("Loading checkpoint: {} ...".format(self.resume_path))
+        checkpoint = torch.load(self.resume_path)
+        self.start_epoch = checkpoint['epoch'] + 1
+        self.mnt_best = checkpoint['monitor_best']
+
+        for index, net in enumerate(models):
+            # load architecture params from checkpoint.
+            net.load_state_dict(checkpoint['state_dicts'][index])
+            self.logger.info("Loaded model {}".format(index))
+
+        for index, opt in enumerate(optimizers):
+            # load optimizer state from checkpoint only when optimizer type is not changed.
+            opt.load_state_dict(checkpoint['optimizer_state_dicts'][index])
+            self.logger.info("Loaded optimizer {}".format(index))
+
+        self.logger.info("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'
