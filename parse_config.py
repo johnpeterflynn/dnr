@@ -10,18 +10,20 @@ from utils import read_json, write_json
 
 
 class ConfigParser:
-    def __init__(self, config, resume=None, modification=None, run_id=None, dry_run=False):
+    def __init__(self, config, resume=None, load=None, modification=None, run_id=None, dry_run=False):
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
         and logging module.
         :param config: Dict containing configurations, hyperparameters for training. contents of `config.json` file for example.
         :param resume: String, path to the checkpoint being loaded.
+        :param load: String, path to the checkpoint being loaded. Does not load optimizer state or current epoch.
         :param modification: Dict keychain:value, specifying position values to be replaced from config dict.
         :param run_id: Unique Identifier for training processes. Used to save checkpoints and training log. Timestamp is being used as default
         """
         # load config file and apply modification
         self._config = _update_config(config, modification)
         self.resume = resume
+        self.load = load
         self.dry_run = dry_run
 
         # set save_dir where trained model and log will be saved.
@@ -86,10 +88,13 @@ class ConfigParser:
 
         if args.message:
             config["description"] = args.message
+        
+        if args.load is not None:
+            load = Path(args.load)
 
         # parse custom cli options into dictionary
         modification = {opt.target : getattr(args, _get_opt_name(opt.flags)) for opt in options}
-        return cls(config, resume, modification, dry_run=args.dry_run)
+        return cls(config, resume, load, modification, dry_run=args.dry_run)
 
     def init_obj(self, name, module, *args, **kwargs):
         """
