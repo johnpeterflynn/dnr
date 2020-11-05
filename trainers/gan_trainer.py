@@ -56,7 +56,8 @@ class GANTrainer(BaseTrainer):
 
         # Lazy loading since we're not creating these nets in BaseTrainer. Order in these lists must bethe same as
         # in _lazy_resume_checkpoint()
-        self._lazy_resume_checkpoint([self.netG, self.netD], [self.optimizer_G, self.optimizer_D])
+        if hasattr(self, 'resume_path'):
+            self._lazy_resume_checkpoint([self.netG, self.netD], [self.optimizer_G, self.optimizer_D])
 
         self.train_metrics = MetricTracker('loss_D_fake', 'loss_D_real', 'loss_G', 'loss_D', 'loss_G_only', 'loss_other', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
