@@ -33,14 +33,28 @@ class GANTrainer(BaseTrainer):
         #self.criterionVGG = VGGLoss().to(self.device, non_blocking=True);
         #self.criterionVGG = torch.nn.DataParallel(self.criterionVGG, device_ids)
 
-        self.netD = gan_networks.define_D(input_nc=2 + 3, ndf=64, netD='basic', norm='instance', init_gain=0.02,
+        self.set_requires_grad(self.model, False) # Assuming using a pretrained model
+
+        # TODO: Select resnet size, num of input channels, whether to use dropout
+        self.netG = gan_networks.define_G(input_nc=3, output_nc=3, ngf=64, netG='resnet_9blocks', norm='instance',
+                use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[self.device]).to(self.device)
+        # TODO: Select num of input channels
+        self.netD = gan_networks.define_D(input_nc=3 + 3, ndf=64, netD='basic', norm='instance', init_gain=0.02,
                                           gpu_ids=[self.device]).to(self.device)
+
+        def count_parameters(model):
+            return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+        print('Num Generator Parameters:', count_parameters(self.netG))
+        print('Num Discriminator Parameters:', count_parameters(self.netD))
+
         self.criterionGAN = gan_networks.GANLoss(gan_mode='lsgan').to(self.device)
 
-        #self.optimizer_G = torch.optim.Adam(self.model.parameters(), lr=config['optimizer']['args']['lr'], betas=(0.5, 0.999))
+        # TODO: Select optimal lr
+        self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=config['optimizer']['args']['lr'], betas=(0.5, 0.999))
         self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=config['optimizer']['args']['lr'], betas=(0.5, 0.999))
 
-        self.train_metrics = MetricTracker('loss_G', 'loss_D', 'loss_G_only', 'loss_other', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.train_metrics = MetricTracker('loss_D_fake', 'loss_D_real', 'loss_G', 'loss_D', 'loss_G_only', 'loss_other', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
 
@@ -70,38 +84,43 @@ class GANTrainer(BaseTrainer):
 
         # Generator
         self.set_requires_grad(self.netD, False)
-        self.optimizer.zero_grad()
+        #self.optimizer.zero_grad()
+        self.optimizer_G.zero_grad()
         self._backward_G()
-        self.optimizer.step()
+        #self.optimizer.step()
+        self.optimizer_G.step()
 
     def _forward(self):
-        self.fake_color = self.model(self.real_uv)
+        self.prior_color = self.model(self.real_uv).detach()
+        self.fake_color = self.netG(self.prior_color)
 
     def _backward_D(self):
         """Calculate GAN loss for the discriminator"""
         # Fake; stop backprop to the generator by detaching fake_B
-        real_uv_permuted = self.real_uv.permute(0, 3, 1, 2)
-        fake_uv_color = torch.cat((real_uv_permuted, self.fake_color), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
-        pred_fake = self.netD(fake_uv_color.detach())
+        fake_input = torch.cat((self.prior_color, self.fake_color), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
+        pred_fake = self.netD(fake_input.detach())
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
         # Real
-        real_uv_color = torch.cat((real_uv_permuted, self.real_color), 1)
-        pred_real = self.netD(real_uv_color)
+        real_input = torch.cat((self.prior_color, self.real_color), 1)
+        pred_real = self.netD(real_input)
         self.loss_D_real = self.criterionGAN(pred_real, True)
         # combine loss and calculate gradients
         self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
+        self.train_metrics.update('loss_D_fake', self.loss_D_fake.item(), write=False)
+        self.train_metrics.update('loss_D_real', self.loss_D_real.item(), write=False)
         self.loss_D.backward()
 
     def _backward_G(self):
         """Calculate GAN and other losses for the generator"""
         # First, G(A) should fake the discriminator
         # Swap uv dimensions since they are intiailly in a different order for grid_sample()
-        fake_uv_color = torch.cat((self.real_uv.permute(0, 3, 1, 2), self.fake_color), 1)
-        pred_fake = self.netD(fake_uv_color)
+        fake_input = torch.cat((self.prior_color, self.fake_color), 1)
+        pred_fake = self.netD(fake_input)
         self.loss_G_GAN = self.criterionGAN(pred_fake, True)
         # Second, G(A) = B
-        # TODO: Find good value for lambda_L1
-        self.loss_G_other = self.criterion(self.fake_color, self.real_color) #* 10.0#self.opt.lambda_L1
+        # TODO: Find good value for self.lambda_other_criterion
+        self.lambda_other_criterion = 10.0
+        self.loss_G_other = self.criterion(self.fake_color, self.real_color) * self.lambda_other_criterion
         self.train_metrics.update('loss_G_only', self.loss_G_GAN.item(), write=False)
         self.train_metrics.update('loss_other', self.loss_G_other.item(), write=False)
         # combine loss and calculate gradients
@@ -114,7 +133,7 @@ class GANTrainer(BaseTrainer):
         :param epoch: Integer, current training epoch.
         :return: A log that contains average loss and metric in this epoch.
         """
-        self.model.train()
+        self.model.eval()
         self.train_metrics.reset()
         for batch_idx, (real_uv_cpu, real_color_cpu) in enumerate(self.data_loader):
             self.real_uv = real_uv_cpu.to(self.device)
@@ -138,6 +157,7 @@ class GANTrainer(BaseTrainer):
 
         # Only visualize the final sample for brevity
         self._visualize_input(real_uv_cpu)
+        self._visualize_prior(self.prior_color.cpu())
         self._visualize_prediction(self.fake_color.cpu())
         self._visualize_target(real_color_cpu)
 
@@ -178,6 +198,7 @@ class GANTrainer(BaseTrainer):
 
             # Only visualize the final sample for brevity
             self._visualize_input(real_uv_cpu)
+            self._visualize_prior(self.prior_color.cpu())
             self._visualize_prediction(self.fake_color.cpu())
             self._visualize_target(real_color_cpu)
 
@@ -211,9 +232,13 @@ class GANTrainer(BaseTrainer):
         data3 = data3.permute(0, 3, 1, 2)
         self.writer.add_image('input', make_grid(data3[0,:,:,:].unsqueeze(0), nrow=8, normalize=False))
 
-    def _visualize_prediction(self, output):
+    def _visualize_prior(self, data):
         """format and display output data on tensorboard"""
-        self.writer.add_image('output', make_grid(output[0,:,:,:].unsqueeze(0), nrow=8, normalize=True))
+        self.writer.add_image('prior', make_grid(data[0,:,:,:].unsqueeze(0), nrow=8, normalize=True))
+
+    def _visualize_prediction(self, data):
+        """format and display output data on tensorboard"""
+        self.writer.add_image('predicted', make_grid(data[0,:,:,:].unsqueeze(0), nrow=8, normalize=True))
 
     def _visualize_target(self, target):
         """format and display target data on tensorboard"""
