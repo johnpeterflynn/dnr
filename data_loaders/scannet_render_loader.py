@@ -194,7 +194,7 @@ class UVDataLoader(BaseDataLoader):
     def __init__(self, data_dir, uv_folder_name, color_folder_name, data_select_file, batch_size, shuffle, skip,
                  net_input_height, net_input_width, min_scale_size=None, max_scale_size=None,
                  num_ignore_border_pixels_lr=0, num_ignore_border_pixels_tb=0, slice_start=None, slice_end=None,
-                 slice_step=None, compressed_input=False, num_workers=1, training=True):
+                 slice_step=None, num_in_train_step=12, num_in_val_step=3, compressed_input=False, num_workers=1, training=True):
 
         self.data_dir = data_dir
         self.skip = skip
@@ -221,7 +221,18 @@ class UVDataLoader(BaseDataLoader):
                                       slice_start <= i < slice_end]
         self.input_color_filenames = self.input_color_filenames[slice(slice_start, slice_end, slice_step)]
 
-        train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
+        train_id = 0
+        val_id = 1
+        self.input_color_filenames = np.array(self.input_color_filenames)
+        input_color_indices = [train_id if (i % (num_in_val_step + num_in_train_step)) < num_in_train_step else val_id for i in range(len(self.input_color_filenames))]
+        input_color_indices = np.array(input_color_indices)
+        self.train_filenames = self.input_color_filenames[input_color_indices == train_id]
+        self.val_filenames = self.input_color_filenames[input_color_indices == val_id]
+       
+        print('Train', len(self.train_filenames))
+        print('Val', len(self.val_filenames))
+
+        #train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
 
         # Build train transformation
         train_transforms = [
@@ -233,14 +244,14 @@ class UVDataLoader(BaseDataLoader):
             ToTensor()
         ]
 
-        self.dataset = UVDataset(train_filenames, compressed_input=self.compressed_input,
+        self.dataset = UVDataset(self.train_filenames, compressed_input=self.compressed_input,
                                  transform=transforms.Compose(train_transforms))
 
         super().__init__(self.dataset, batch_size, shuffle, num_workers, pin_memory=True)
         pass
 
     def split_validation(self):
-        val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
+        self.val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
 
         # TODO: NOTE: Validation is scaled so that it can fit into memory with the same batch size as the training
         #  dataset. This is a problem because 1) the validation set is not capable of evaluating improvements in
@@ -257,7 +268,7 @@ class UVDataLoader(BaseDataLoader):
             ToTensor()
         ]
 
-        val_dataset = UVDataset(val_filenames, compressed_input=self.compressed_input,
+        val_dataset = UVDataset(self.val_filenames, compressed_input=self.compressed_input,
                                 transform=transforms.Compose(val_transforms))
 
         batch_size = self.init_kwargs['batch_size']
