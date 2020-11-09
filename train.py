@@ -48,8 +48,15 @@ def main(config):
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
     # build optimizer
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+    trainable_unet_params = filter(lambda p: p.requires_grad, model.dnr.parameters())
+
+    optimizer = config.init_obj('optimizer', torch.optim, trainable_unet_params)
+
+    # TODO: Again, this optimizer abstraction causes more problems than it solves. This is a work-around for now.
+    mipmap = model.neural_texture.get_mipmap()
+    for i, layer in enumerate(mipmap):
+        optimizer.add_param_group({'params': layer, 'weight_decay':
+            config['optimizer']['laplacian_weight_decay'] * ((2 ** (len(mipmap) - i - 1)) - 1)})
 
     trainer = RenderTrainer(model, criterion, metrics, optimizer,
                       config=config,
