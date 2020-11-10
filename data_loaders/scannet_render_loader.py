@@ -227,14 +227,19 @@ class UVDataLoader(BaseDataLoader):
 
         train_id = 0
         val_id = 1
+        test_id = 2
         self.input_color_filenames = np.array(self.input_color_filenames)
-        input_color_indices = [train_id if (i % (num_in_val_step + num_in_train_step)) < num_in_train_step else val_id for i in range(len(self.input_color_filenames))]
+        input_color_indices = [(test_id if (i // (num_in_train_step + num_in_val_step)) % 2 == 0 else val_id)
+                if (i % (num_in_train_step + num_in_val_step)) >= num_in_train_step else train_id for i in range(len(self.input_color_filenames))]
+
         input_color_indices = np.array(input_color_indices)
         self.train_filenames = self.input_color_filenames[input_color_indices == train_id]
         self.val_filenames = self.input_color_filenames[input_color_indices == val_id]
+        self.test_filenames = self.input_color_filenames[input_color_indices == test_id]
        
         print('Train', len(self.train_filenames))
         print('Val', len(self.val_filenames))
+        print('Test', len(self.test_filenames))
 
         #train_filenames = self.generate_temporal_train_split(self.input_color_filenames, self.skip)
 
