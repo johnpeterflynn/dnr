@@ -21,7 +21,7 @@
             "skip": 1,
             "slice_start": 0,
             "slice_end":5578,
-            "slice_step": 2,
+            "slice_step": 4,
 	    "num_in_train_step": 18,
 	    "num_in_val_step": 6,
             "net_input_height": 400,
@@ -50,7 +50,7 @@
 	    "psnr"
     ],
     "trainer": {
-        "epochs": 400,
+        "epochs": 200,
 
         "save_dir": "saved/",
         "save_period": 50,
