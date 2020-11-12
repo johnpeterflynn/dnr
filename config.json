@@ -21,7 +21,7 @@
             "skip": 1,
             "slice_start": 0,
             "slice_end":5578,
-            "slice_step": 4,
+            "slice_step": 8,
 	    "num_in_train_step": 18,
 	    "num_in_val_step": 6,
             "net_input_height": 400,
