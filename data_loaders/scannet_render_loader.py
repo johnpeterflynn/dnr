@@ -284,6 +284,22 @@ class UVDataLoader(BaseDataLoader):
         num_workers = self.init_kwargs['num_workers']
         return DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True, pin_memory=True)
 
+    def split_test(self):
+        # Build val transformation
+        test_transforms = [
+            BorderCrop(self.num_ignore_border_pixels_lr, self.num_ignore_border_pixels_tb),
+            Rescale(self.max_scale_size, self.max_scale_size),
+            Normalize(),
+            ToTensor()
+        ]
+
+        test_dataset = UVDataset(self.test_filenames, compressed_input=self.compressed_input,
+                                transform=transforms.Compose(test_transforms))
+
+        batch_size = self.init_kwargs['batch_size']
+        num_workers = self.init_kwargs['num_workers']
+        return DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers, shuffle=False, pin_memory=True)
+
     def load_input_color_filenames(self, data_dir, uv_folder_name, color_folder_name):
         input_filenames = self.load_filenames_sorted(data_dir, uv_folder_name)
         color_filenames = self.load_filenames_sorted(data_dir, color_folder_name)
