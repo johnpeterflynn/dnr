@@ -21,7 +21,7 @@
             "skip": 1,
             "slice_start": 0,
             "slice_end":5578,
-            "slice_step": 8,
+            "slice_step": 1,
 	    "num_in_train_step": 18,
 	    "num_in_val_step": 6,
             "net_input_height": 400,
@@ -42,7 +42,7 @@
             "weight_decay": 0,
             "amsgrad": true
         },
-        "laplacian_weight_decay": 2.5e-6
+        "laplacian_weight_decay": 1.0e-6
     },
     "loss": "photometric_reproduction_loss",
     "metrics": [
@@ -50,7 +50,7 @@
 	    "psnr"
     ],
     "trainer": {
-        "epochs": 200,
+        "epochs": 500,
 
         "save_dir": "saved/",
         "save_period": 100,
