@@ -260,8 +260,6 @@ class UVDataLoader(BaseDataLoader):
         pass
 
     def split_validation(self):
-        self.val_filenames = self.generate_temporal_val_split(self.input_color_filenames, self.skip)
-
         # TODO: NOTE: Validation is scaled so that it can fit into memory with the same batch size as the training
         #  dataset. This is a problem because 1) the validation set is not capable of evaluating improvements in
         #  fine details of the neural textures since they're downsampled away and 2) the validation loss between
