@@ -26,7 +26,7 @@
 	    "num_in_val_step": 6,
             "net_input_height": 400,
             "net_input_width": 400,
-            "min_scale_size": 968,
+            "min_scale_size": 400,
             "max_scale_size": 968,
             "num_ignore_border_pixels_lr": 11,
             "num_ignore_border_pixels_tb": 8,

@@ -92,7 +92,7 @@ class Rescale(object):
         # TODO: Use pillow library for resizing images
         # Nearest neighbor for input_image since we can't interpolate across discontinuities in uv coordinates
         input_image = transform.resize(input_image, (new_h, new_w), order=0)
-        color_image = transform.resize(color_image, (new_h, new_w), order=1, anti_aliasing=(new_h < h))
+        color_image = transform.resize(color_image, (new_h, new_w), order=0)#1, anti_aliasing=(new_h < h))
         #input_image = cv2.resize(input_image, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
         #color_image = cv2.resize(color_image, (new_w, new_h), interpolation=cv2.INTER_AREA)
 
