@@ -195,8 +195,8 @@ class ToTensor(object):
 
 class UVDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
-    def __init__(self, data_dir, uv_folder_name, color_folder_name, data_select_file, batch_size, shuffle, skip,
-                 net_input_height, net_input_width, min_scale_size=None, max_scale_size=None,
+    def __init__(self, data_dir, uv_folder_name, color_folder_name, batch_size, shuffle, skip,
+                 net_input_height, net_input_width, data_select_file=None, min_scale_size=None, max_scale_size=None,
                  num_ignore_border_pixels_lr=0, num_ignore_border_pixels_tb=0, slice_start=None, slice_end=None,
                  slice_step=None, num_in_train_step=12, num_in_val_step=3, compressed_input=False, num_workers=1, training=True):
 
@@ -216,9 +216,12 @@ class UVDataLoader(BaseDataLoader):
 
         self.compressed_input = compressed_input
 
-        with open(os.path.join(data_dir, data_select_file)) as csv_file:
-            data = pd.read_csv(csv_file, delimiter=' ', index_col=None, header=None)
-            self.use_indices = np.array(data.values).squeeze()
+        if data_select_file is not None:
+            with open(os.path.join(data_dir, data_select_file)) as csv_file:
+                data = pd.read_csv(csv_file, delimiter=' ', index_col=None, header=None)
+                self.use_indices = np.array(data.values).squeeze()
+        else:
+            self.use_indices = np.arange(slice_end)
 
         self.input_color_filenames = self.load_input_color_filenames(data_dir, uv_folder_name, color_folder_name)
         self.input_color_filenames = [self.input_color_filenames[i] for i in self.use_indices if
