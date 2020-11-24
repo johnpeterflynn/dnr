@@ -12,6 +12,45 @@ from utils import vector_math
 _SCREEN_HEIGHT, _SCREEN_WIDTH, _UV_CHANNELS = 968, 1296, 2
 
 
+def get_train_val_test_split(data_ids, num_in_train_step, num_in_val_step, data_select_path=None, slice_start=0,
+                             slice_step=1, slice_end=None):
+    """Separates data_ids into three separate lists of ids for train, val and test respectively.
+    """
+    train_flag = 0
+    val_flag = 1
+    test_flag = 2
+
+    if slice_end is None:
+        slice_end = len(data_ids)
+
+    if data_select_path is not None:
+        with open(data_select_path) as csv_file:
+            data = pd.read_csv(csv_file, delimiter=' ', index_col=None, header=None)
+            use_indices = np.array(data.values).squeeze()
+    else:
+        use_indices = np.arange(slice_end)
+
+    data_ids = [data_ids[i] for i in use_indices if slice_start <= i < slice_end]
+    data_ids = data_ids[slice(slice_start, slice_end, slice_step)]
+
+    data_ids = np.array(data_ids)
+    category_indices = [(test_flag if (i // (num_in_train_step + num_in_val_step)) % 2 == 0 else val_flag)
+                        if (i % (num_in_train_step + num_in_val_step)) >= num_in_train_step else train_flag for i
+                        in range(len(data_ids))]
+
+    category_indices = np.array(category_indices)
+    train_ids = data_ids[category_indices == train_flag]
+    val_ids = data_ids[category_indices == val_flag]
+    test_ids = data_ids[category_indices == test_flag]
+
+    print('Train', len(train_ids))
+    print('Val', len(val_ids))
+    print('Test', len(test_ids))
+
+    return train_ids, val_ids, test_ids
+
+
+# NOTE: DEPRECATED
 def get_train_val_split(pose_files, skip, max_index=None, stride=1):
     if max_index is None:
         max_index = len(pose_files)
