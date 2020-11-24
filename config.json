@@ -39,7 +39,7 @@
         "type": "Adam",
         "args":{
             "lr": 0.001,
-            "weight_decay": 0,
+            "weight_decay": 2.5e-6,
             "amsgrad": true
         },
         "laplacian_weight_decay": 0
