@@ -87,8 +87,9 @@ def load_trained_model(train_id, logs='./saved', model_name=None,
 # Cereate a libtorch script file containing the model that can be loaded into C++
 def create_libtorch_script(train_id, logs, model_name, checkpoint_name='model_best',
         model_script_folder='./libtorch-models'):
-    model, loaded_epoch = load_trained_model(train_id, logs=logs, checkpoint_name=checkpoint_name)
-    _create_libtorch_script_from_model(model, traid_id, model_name, checkpoint_name)
+    model, loaded_epoch = load_trained_model(train_id, logs=logs, checkpoint_name=checkpoint_name,
+            model_name=model_name)
+    _create_libtorch_script_from_model(model, train_id, model_name, checkpoint_name)
 
 
 def _create_libtorch_script_from_model(model, epochs, train_id, model_name, checkpoint_name,
@@ -96,10 +97,11 @@ def _create_libtorch_script_from_model(model, epochs, train_id, model_name, chec
     sm = torch.jit.script(model)
     model_script_name = '{}-{}-{}-{}-{}.pt'.format(model_name, train_id, checkpoint_name, 
             epochs, datetime.now().strftime(r'%m%d_%H%M%S'))
-    model_script_path = os.path.join(model_script_folder, model_script_name)
+    model_script_subfolder = os.path.join(model_script_folder, train_id)
+    model_script_path = os.path.join(model_script_folder, train_id, model_script_name)
     print('Created libtorch script', model_script_path)
     
-    save_dir = Path(model_script_folder)
+    save_dir = Path(model_script_subfolder)
     save_dir.mkdir(parents=True, exist_ok=True)
     sm.save(model_script_path)
 

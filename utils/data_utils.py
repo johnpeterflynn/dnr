@@ -112,7 +112,7 @@ def get_val_nn_train_angles(train_rots, val_rots, unit='deg'):
     return angles
 
 
-def load_texture_coord(file, compressed=True):
+def load_texture_coord(file, height=_SCREEN_HEIGHT, width=_SCREEN_WIDTH, channels=_UV_CHANNELS, compressed=True):
     if compressed:
         # Decompress texture coordinate file into a numpy array
         with gzip.open(file, 'rb') as f:
@@ -120,7 +120,7 @@ def load_texture_coord(file, compressed=True):
     else:
         uv_image = np.fromfile(uv_image_path, dtype='float32')
 
-    uv_image = np.reshape(uv_image, (_SCREEN_HEIGHT, _SCREEN_WIDTH, _UV_CHANNELS))
+    uv_image = np.reshape(uv_image, (height, width, channels))
     uv_image = np.flip(uv_image, axis=0).copy()
 
     return uv_image
