@@ -48,7 +48,7 @@ def main(config):
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
     # build optimizer
-    trainable_unet_params = filter(lambda p: p.requires_grad, model.dnr.parameters())
+    trainable_unet_params = filter(lambda p: p.requires_grad, model.dummy.parameters())
 
     optimizer = config.init_obj('optimizer', torch.optim, trainable_unet_params)
 

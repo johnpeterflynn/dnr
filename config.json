@@ -6,7 +6,7 @@
         "type": "RenderNet",
         "args": {
             "texture_size": 3000,
-            "texture_depth": 16,
+            "texture_depth": 3,
             "mipmap_levels": 4
         }
     },
