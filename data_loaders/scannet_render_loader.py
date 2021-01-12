@@ -13,7 +13,7 @@ from base import BaseDataLoader
 
 #from torch.utils.data.dataloader import default_collate
 
-_UV_CHANNELS = 2
+_SUPPORTED_UV_CHANNELS = 2
 
 class UVDataset(Dataset):
     def __init__(self, uv_color_filenames, compressed_input, transform=None):
@@ -41,7 +41,13 @@ class UVDataset(Dataset):
         else:
             uv_image = np.fromfile(uv_image_path, dtype='float32')
 
-        uv_image = np.reshape(uv_image, (image_height, image_width, _UV_CHANNELS))
+        num_channels = int(len(uv_image) / (image_height * image_width))
+        uv_image = np.reshape(uv_image, (image_height, image_width, num_channels))
+
+        if num_channels > _SUPPORTED_UV_CHANNELS:
+            #print("{} channels in UV files but only {} chanels supported. Clipping channels.".format(
+            #        num_channels, _SUPPORTED_UV_CHANNELS))
+            uv_image = uv_image[:,:,0:_SUPPORTED_UV_CHANNELS]
 
         # Stride becomes negative without a copy
         # TODO: Remove need to flip image by optimizing data preprocessing
