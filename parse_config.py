@@ -89,8 +89,10 @@ class ConfigParser:
         if args.message:
             config["description"] = args.message
         
-        if args.load is not None:
+        if hasattr(args, 'load') and args.load is not None:
             load = Path(args.load)
+        else:
+            load = None
 
         # parse custom cli options into dictionary
         modification = {opt.target : getattr(args, _get_opt_name(opt.flags)) for opt in options}
