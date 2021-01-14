@@ -10,13 +10,14 @@ from utils import read_json, write_json
 
 
 class ConfigParser:
-    def __init__(self, config, resume=None, load=None, modification=None, run_id=None, dry_run=False):
+    def __init__(self, config, resume=None, load=None, modification=None, run_id=None, git_hash=None, dry_run=False):
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
         and logging module.
         :param config: Dict containing configurations, hyperparameters for training. contents of `config.json` file for example.
         :param resume: String, path to the checkpoint being loaded.
         :param load: String, path to the checkpoint being loaded. Does not load optimizer state or current epoch.
+        :param git_hash: String, git commit hash.
         :param modification: Dict keychain:value, specifying position values to be replaced from config dict.
         :param run_id: Unique Identifier for training processes. Used to save checkpoints and training log. Timestamp is being used as default
         """
@@ -36,10 +37,13 @@ class ConfigParser:
         self._log_dir = save_dir / 'log' / exper_name / run_id
 
         if not self.dry_run:
-            # TODO: Generate repo tag from train.py
-            # Add a tag to the current git commit
-            repo = Repo('.')
-            repo.create_tag('{}_{}'.format(exper_name, run_id))
+            try:
+                # TODO: Generate repo tag from train.py
+                # Add a tag to the current git commit
+                repo = Repo('.')
+                repo.create_tag('{}_{}'.format(exper_name, run_id))
+            except:
+                print('Error: Could not rind git repository')
 
             # make directory for saving checkpoints and log.
             exist_ok = run_id == ''
@@ -94,9 +98,15 @@ class ConfigParser:
         else:
             load = None
 
+        if hasattr(args, 'git_hash') and args.git_hash is not None:
+            git_hash = args.git_hash
+            config["git_hash"] = args.git_hash
+        else:
+            git_hash = None
+
         # parse custom cli options into dictionary
         modification = {opt.target : getattr(args, _get_opt_name(opt.flags)) for opt in options}
-        return cls(config, resume, load, modification, dry_run=args.dry_run)
+        return cls(config, resume, load, modification, git_hash=git_hash, dry_run=args.dry_run)
 
     def init_obj(self, name, module, *args, **kwargs):
         """

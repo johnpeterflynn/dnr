@@ -29,8 +29,11 @@ def main(config):
     logger.info("Random seed: {}".format(SEED))
 
     # log the current git hash
-    logger.info("Git hash: {}".format(
-        subprocess.check_output(["git", "describe", "--always"]).strip()))
+    if config["git_hash"] is not None:
+        hash = config["git_hash"]
+    else:
+        hash = subprocess.check_output(["git", "describe", "--always"]).strip()
+    logger.info("Git hash: {}".format(hash))
 
     # print training session description to logs
     logger.info("Description: {}".format(config["description"]))
@@ -78,6 +81,8 @@ if __name__ == '__main__':
                       help='If true, disables logging of models to disk and tags to git (default: False)')
     args.add_argument('-m', '--message', default=None, type=str,
                       help='description of this training session')
+    args.add_argument('-g', '--git_hash', default=None, type=str,
+                      help='manually enter git hash in case it\'s not available locally (e.g. remote execution)')
 
     # custom cli options to modify configuration from default values given in json file.
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
