@@ -59,7 +59,7 @@ class GANTrainer(BaseTrainer):
         if hasattr(self, 'resume_path'):
             self._lazy_resume_checkpoint([self.netG, self.netD], [self.optimizer_G, self.optimizer_D])
 
-        self.train_metrics = MetricTracker('loss_D_fake', 'loss_D_real', 'loss_G', 'loss_D', 'loss_G_only', 'loss_other', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.train_metrics = MetricTracker('loss_D_fake', 'loss_D_real', 'loss_G', 'loss_D', 'loss_G_fake', 'loss_G_influencer', 'acc_D_real', 'acc_D_fake', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
 
@@ -104,15 +104,15 @@ class GANTrainer(BaseTrainer):
         # Fake; stop backprop to the generator by detaching fake_B
         fake_input = torch.cat((self.prior_color, self.fake_color), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
         pred_fake = self.netD(fake_input.detach())
+        self.accuracy_D_fake = torch.mean(torch.sigmoid(pred_fake)).item()
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
         # Real
         real_input = torch.cat((self.prior_color, self.real_color), 1)
         pred_real = self.netD(real_input)
+        self.accuracy_D_real = torch.mean(torch.sigmoid(pred_real)).item()
         self.loss_D_real = self.criterionGAN(pred_real, True)
         # combine loss and calculate gradients
         self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
-        self.train_metrics.update('loss_D_fake', self.loss_D_fake.item(), write=False)
-        self.train_metrics.update('loss_D_real', self.loss_D_real.item(), write=False)
         self.loss_D.backward()
 
     def _backward_G(self):
@@ -125,11 +125,9 @@ class GANTrainer(BaseTrainer):
         # Second, G(A) = B
         # TODO: Find good value for self.lambda_other_criterion
         self.lambda_other_criterion = 10.0
-        self.loss_G_other = self.criterion(self.fake_color, self.real_color) * self.lambda_other_criterion
-        self.train_metrics.update('loss_G_only', self.loss_G_GAN.item(), write=False)
-        self.train_metrics.update('loss_other', self.loss_G_other.item(), write=False)
+        self.loss_G_influencer = self.criterion(self.fake_color, self.real_color) * self.lambda_other_criterion
         # combine loss and calculate gradients
-        self.loss_G = self.loss_G_GAN + self.loss_G_other
+        self.loss_G = self.loss_G_GAN + self.loss_G_influencer
         self.loss_G.backward()
 
     def _train_epoch(self, epoch):
@@ -148,6 +146,12 @@ class GANTrainer(BaseTrainer):
 
             self.train_metrics.update('loss_G', self.loss_G.item(), write=False)
             self.train_metrics.update('loss_D', self.loss_D.item(), write=False)
+            self.train_metrics.update('loss_D_fake', self.loss_D_fake.item(), write=False)
+            self.train_metrics.update('loss_D_real', self.loss_D_real.item(), write=False)
+            self.train_metrics.update('loss_G_fake', self.loss_G_GAN.item(), write=False)
+            self.train_metrics.update('loss_G_influencer', self.loss_G_influencer.item(), write=False)
+            self.train_metrics.update('acc_D_real', self.accuracy_D_real, write=False)
+            self.train_metrics.update('acc_D_fake', self.accuracy_D_fake, write=False)
             for met in self.metric_ftns:
                 self.train_metrics.update(met.__name__, met(self.fake_color, self.real_color), write=False)
 
