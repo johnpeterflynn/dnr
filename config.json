@@ -3,7 +3,7 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "RenderNet",
+        "type": "RenderNetNoUNet",
         "args": {
             "texture_size": 3000,
             "texture_depth": 3,
@@ -20,7 +20,7 @@
             "batch_size": 4,
             "skip": 1,
             "slice_start": 0,
-            "slice_end": 5577,
+            "slice_end": 500,
             "slice_step": 1,
 	    "num_in_train_step": 18,
 	    "num_in_val_step": 6,
@@ -38,7 +38,7 @@
     "optimizer": {
         "type": "Adam",
         "args":{
-            "lr": 0.01,
+            "lr": 0.001,
             "weight_decay": 2.5e-6,
             "amsgrad": true
         },
