@@ -39,7 +39,7 @@ class GANTrainer(BaseTrainer):
         self.netG = gan_networks.define_G(input_nc=3, output_nc=3, ngf=64, netG='resnet_9blocks', norm='instance',
                 use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[self.device]).to(self.device)
         # TODO: Select num of input channels
-        self.netD = gan_networks.define_D(input_nc=3 + 3, ndf=64, netD='basic', norm='instance', init_gain=0.02,
+        self.netD = gan_networks.define_D(input_nc=3 + 3 + 1, ndf=64, netD='basic', norm='instance', init_gain=0.02,
                                           gpu_ids=[self.device]).to(self.device)
 
         def count_parameters(model):
@@ -119,12 +119,12 @@ class GANTrainer(BaseTrainer):
     def _backward_D(self):
         """Calculate GAN loss for the discriminator"""
         # Fake; stop backprop to the generator by detaching fake_B
-        fake_input = torch.cat((self.prior_color, self.fake_color), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
+        fake_input = torch.cat((self.mask, self.prior_color, self.fake_color), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
         pred_fake = self.netD(fake_input.detach())
         self.accuracy_D_fake = torch.mean(1 - torch.sigmoid(pred_fake)).item()
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
         # Real
-        real_input = torch.cat((self.prior_color, self.real_color), 1)
+        real_input = torch.cat((self.mask, self.prior_color, self.real_color), 1)
         pred_real = self.netD(real_input)
         self.accuracy_D_real = torch.mean(torch.sigmoid(pred_real)).item()
         self.loss_D_real = self.criterionGAN(pred_real, True)
@@ -135,8 +135,8 @@ class GANTrainer(BaseTrainer):
     def _backward_G(self):
         """Calculate GAN and other losses for the generator"""
         # First, G(A) should fake the discriminator
-        # Swap uv dimensions since they are intiailly in a different order for grid_sample()
-        fake_input = torch.cat((self.prior_color, self.fake_color), 1)
+        # Swap uv dimensions since they are initially in a different order for grid_sample()
+        fake_input = torch.cat((self.mask, self.prior_color, self.fake_color), 1)
         pred_fake = self.netD(fake_input)
         self.loss_G_GAN = self.criterionGAN(pred_fake, True)
         # Second, G(A) = B
