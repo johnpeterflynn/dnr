@@ -11,11 +11,12 @@
         }
     },
     "data_loader": {
-        "type": "UVDataLoader",
+        "type": "UVMaskDataLoader",
         "args":{
             "data_dir": "data/scene0000_00",
             "uv_folder_name": "uv/uv_volumetric",
             "color_folder_name": "color",
+            "mask_file": "visibility_mask.png",
             "data_select_file": "filters/keypoint_blur_1.2.txt",
             "batch_size": 4,
             "skip": 1,
