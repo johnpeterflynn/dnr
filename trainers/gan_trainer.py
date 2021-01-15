@@ -96,15 +96,32 @@ class GANTrainer(BaseTrainer):
         self.optimizer_G.step()
 
     def _forward(self):
-        self.prior_color = self.model(self.real_uv).detach()
+        # TODO: NOTE: self.real_color should be generated elsewhere, either from a dataloader
+        #  or from a different module that manages self.model
+        self.real_color = self.model(self.real_uv).detach()
+        self.prior_color = self._create_masked_image(self.real_color, self.mask)
         self.fake_color = self.netG(self.prior_color)
+
+    def _create_masked_image_square(self, image, h_norm_start, w_norm_start, h_norm_end, w_norm_end):
+        _, _, h, w = image.shape
+        h_start, w_start, h_end, w_end = int(h_norm_start * h), int(w_norm_start * w), int(h_norm_end * h), int(w_norm_end * w)
+        masked_image = image.clone()
+        masked_image[:, :, h_start:h_end, w_start:w_end] = 1.0  # White
+
+        return masked_image
+
+    def _create_masked_image(self, image, mask):
+        masked_image = image.clone()
+        masked_image[mask.expand_as(masked_image)] = 1.0  # Set to white (TODO: how else to mask?)
+
+        return masked_image
 
     def _backward_D(self):
         """Calculate GAN loss for the discriminator"""
         # Fake; stop backprop to the generator by detaching fake_B
         fake_input = torch.cat((self.prior_color, self.fake_color), 1)  # we use conditional GANs; we need to feed both input and output to the discriminator
         pred_fake = self.netD(fake_input.detach())
-        self.accuracy_D_fake = torch.mean(torch.sigmoid(pred_fake)).item()
+        self.accuracy_D_fake = torch.mean(1 - torch.sigmoid(pred_fake)).item()
         self.loss_D_fake = self.criterionGAN(pred_fake, False)
         # Real
         real_input = torch.cat((self.prior_color, self.real_color), 1)
@@ -138,9 +155,12 @@ class GANTrainer(BaseTrainer):
         """
         self.model.eval()
         self.train_metrics.reset()
-        for batch_idx, (real_uv_cpu, real_color_cpu) in enumerate(self.data_loader):
+        for batch_idx, (real_uv_cpu, _, mask_cpu) in enumerate(self.data_loader):
             self.real_uv = real_uv_cpu.to(self.device)
-            self.real_color = real_color_cpu.to(self.device, non_blocking=True)
+            self.mask = mask_cpu.to(self.device)
+
+            # Assigned in forward for now since we're doing masking there
+            #self.real_color = real_color_cpu.to(self.device, non_blocking=True)
 
             self._optimize_parameters()
 
@@ -168,7 +188,7 @@ class GANTrainer(BaseTrainer):
         self._visualize_input(real_uv_cpu)
         self._visualize_prior(self.prior_color.cpu())
         self._visualize_prediction(self.fake_color.cpu())
-        self._visualize_target(real_color_cpu)
+        self._visualize_target(self.real_color.cpu())
 
         self.writer.set_step(epoch - 1)
         log = self.train_metrics.result(write=True)
@@ -190,9 +210,12 @@ class GANTrainer(BaseTrainer):
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
-            for batch_idx, (real_uv_cpu, real_color_cpu) in enumerate(self.valid_data_loader):
+            for batch_idx, (real_uv_cpu, _, mask_cpu) in enumerate(self.valid_data_loader):
                 self.real_uv = real_uv_cpu.to(self.device)
-                self.real_color = real_color_cpu.to(self.device, non_blocking=True)
+                self.mask = mask_cpu.to(self.device)
+
+                # Assigned in forward for now since we're doing masking there
+                #self.real_color = real_color_cpu.to(self.device, non_blocking=True)
 
                 self._forward()
 
@@ -209,7 +232,7 @@ class GANTrainer(BaseTrainer):
             self._visualize_input(real_uv_cpu)
             self._visualize_prior(self.prior_color.cpu())
             self._visualize_prediction(self.fake_color.cpu())
-            self._visualize_target(real_color_cpu)
+            self._visualize_target(self.real_color.cpu())
 
         # add histogram of model parameters to the tensorboard
         #for name, p in self.model.named_parameters():
