@@ -31,7 +31,7 @@ class UVMaskDataset(Dataset):
         # Load mask (if RGB, assuming mask in color R)
         self.mask = np.asarray(Image.open(mask_file))
         self.mask = self.mask[:, :, 0].copy()
-        self.mask = binary_erosion(self.mask.astype(np.bool), iterations=3)
+        self.mask = binary_erosion(self.mask.astype(np.bool), iterations=5)
         self.mask = np.invert(self.mask)
         self.mask = torch.tensor(self.mask.astype(np.float32))
 
