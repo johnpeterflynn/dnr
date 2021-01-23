@@ -10,6 +10,7 @@ from skimage import io, transform, img_as_float32
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from base import BaseDataLoader
+from utils import data_utils
 
 from PIL import Image
 from torchvision import transforms
@@ -23,9 +24,11 @@ from scipy import stats
 _SUPPORTED_UV_CHANNELS = 2
 
 class UVMaskDataset(Dataset):
-    def __init__(self, uv_color_filenames, mask_file, compressed_input, transform=None):
+    def __init__(self, uv_color_filenames, mask_file, compressed_input, uv_size, uv_encoded=True, transform=None):
         self.transform = transform
         self.uv_color_filenames = uv_color_filenames
+        self.uv_size = uv_size
+        self.uv_encoded = uv_encoded
         self.compressed_input = compressed_input
 
         # Load mask (if RGB, assuming mask in color R)
@@ -45,26 +48,9 @@ class UVMaskDataset(Dataset):
         color_image = io.imread(color_image_path)
         color_image = np.array(color_image)
 
-        image_height, image_width, _ = color_image.shape
-
-        if self.compressed_input:
-            # Decompress texture coordinate file into a numpy array
-            with gzip.open(uv_image_path, 'rb') as f:
-                uv_image = np.frombuffer(f.read(), dtype='float32')
-        else:
-            uv_image = np.fromfile(uv_image_path, dtype='float32')
-
-        num_channels = int(len(uv_image) / (image_height * image_width))
-        uv_image = np.reshape(uv_image, (image_height, image_width, num_channels))
-
-        if num_channels > _SUPPORTED_UV_CHANNELS:
-            #print("{} channels in UV files but only {} chanels supported. Clipping channels.".format(
-            #        num_channels, _SUPPORTED_UV_CHANNELS))
-            uv_image = uv_image[:,:,0:_SUPPORTED_UV_CHANNELS]
-
-        # Stride becomes negative without a copy
-        # TODO: Remove need to flip image by optimizing data preprocessing
-        uv_image = np.flip(uv_image, axis=0).copy()
+        uv_height, uv_width = self.uv_size
+        uv_image = data_utils.load_texture_coord(uv_image_path, uv_height, uv_width,
+                                                 compressed=self.compressed_input, encoded=self.uv_encoded)
 
         sample = {'uv': uv_image, 'color': color_image}
 
@@ -219,7 +205,7 @@ class ToTensor(object):
 class UVMaskDataLoader(BaseDataLoader):
     # TODO: Rewrite this class in a more understandable way
     def __init__(self, data_dir, uv_folder_name, color_folder_name, mask_file, batch_size, shuffle, skip,
-                 net_input_height, net_input_width, data_select_file=None, min_scale_size=None, max_scale_size=None,
+                 net_input_height, net_input_width, uv_height, uv_width, uv_encoded=True, data_select_file=None, min_scale_size=None, max_scale_size=None,
                  num_ignore_border_pixels_lr=0, num_ignore_border_pixels_tb=0, slice_start=None, slice_end=None,
                  slice_step=None, num_in_train_step=12, num_in_val_step=3, compressed_input=False,  num_workers=1, training=True):
 
@@ -227,6 +213,8 @@ class UVMaskDataLoader(BaseDataLoader):
         self.mask_file = mask_file
         self.skip = skip
         self.size = (net_input_height, net_input_width)
+        self.uv_size = (uv_height, uv_width)
+        self.uv_encoded = uv_encoded
         self.num_ignore_border_pixels_lr = num_ignore_border_pixels_lr
         self.num_ignore_border_pixels_tb = num_ignore_border_pixels_tb
 
@@ -281,7 +269,7 @@ class UVMaskDataLoader(BaseDataLoader):
         ]
 
         self.dataset = UVMaskDataset(self.train_filenames, self.mask_file, compressed_input=self.compressed_input,
-                                 transform=transforms.Compose(train_transforms))
+                                 uv_size=self.uv_size, uv_encoded=self.uv_encoded, transform=transforms.Compose(train_transforms))
 
         super().__init__(self.dataset, batch_size, shuffle, num_workers, pin_memory=True)
         pass
@@ -303,7 +291,7 @@ class UVMaskDataLoader(BaseDataLoader):
         ]
 
         val_dataset = UVMaskDataset(self.val_filenames, self.mask_file, compressed_input=self.compressed_input,
-                                transform=transforms.Compose(val_transforms))
+                                uv_size=self.uv_size, uv_encoded=self.uv_encoded, transform=transforms.Compose(val_transforms))
 
         batch_size = self.init_kwargs['batch_size']
         num_workers = self.init_kwargs['num_workers']
@@ -319,7 +307,7 @@ class UVMaskDataLoader(BaseDataLoader):
         ]
 
         test_dataset = UVMaskDataset(self.test_filenames, self.mask_file, compressed_input=self.compressed_input,
-                                transform=transforms.Compose(test_transforms))
+                                uv_size=self.uv_size, uv_encoded=self.uv_encoded, transform=transforms.Compose(test_transforms))
 
         batch_size = self.init_kwargs['batch_size']
         num_workers = self.init_kwargs['num_workers']
