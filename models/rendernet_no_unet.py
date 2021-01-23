@@ -13,9 +13,11 @@ class RenderNetNoUNet(BaseModel):
         self.neural_texture = NeuralTexture(texture_size, texture_depth, mipmap_levels)
         #self.dnr = DeferredNeuralRenderer(texture_depth)
         self.dummy = DummyModule()
+        self.tanh = nn.Tanh()
 
     def forward(self, input):
         f = self.neural_texture(input)
+        f = self.tanh(f)
 
         #t1 = torch.cuda.Event(enable_timing=True)
         #t2 = torch.cuda.Event(enable_timing=True)
