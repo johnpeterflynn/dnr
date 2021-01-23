@@ -117,17 +117,25 @@ class BorderCrop(object):
         input_image, color_image = sample['uv'], sample['color']
 
         # Assuming input_image and color_image are the same shape
-        h, w, _ = color_image.shape
+        ch, cw, _ = color_image.shape
+        ih, iw, _ = input_image.shape
 
-        # Get a valid starting and end positions
-        h_start = self.crop_pixels_tb
-        w_start = self.crop_pixels_lr
-        h_end = h - self.crop_pixels_tb
-        w_end = w - self.crop_pixels_lr
+        # Get a valid starting and end positions for color
+        ch_start = self.crop_pixels_tb
+        cw_start = self.crop_pixels_lr
+        ch_end = ch - ch_start
+        cw_end = cw - cw_start
+
+        # And valid starting and end positions for input (could be different if
+        # input is a different size)
+        ih_start = int(np.round(self.crop_pixels_tb * ih / ch))
+        iw_start = int(np.round(self.crop_pixels_lr * iw / cw))
+        ih_end = ih - ih_start
+        iw_end = iw - iw_start
 
         # Crop the input and target
-        input_image = input_image[h_start:h_end, w_start:w_end, :]
-        color_image = color_image[h_start:h_end, w_start:w_end, :]
+        input_image = input_image[ih_start:ih_end, iw_start:iw_end, :]
+        color_image = color_image[ch_start:ch_end, cw_start:cw_end, :]
 
         return {'uv': input_image, 'color': color_image}
 
