@@ -244,8 +244,7 @@ class UVMaskDataLoader(BaseDataLoader):
             self.use_indices = np.arange(slice_end)
 
         self.input_color_filenames = self.load_input_color_filenames(data_dir, uv_folder_name, color_folder_name)
-        self.input_color_filenames = [self.input_color_filenames[i] for i in self.use_indices if
-                                      slice_start <= i < slice_end]
+        self.input_color_filenames = [self.input_color_filenames[i] for i in self.use_indices]
         self.input_color_filenames = self.input_color_filenames[slice(slice_start, slice_end, slice_step)]
 
         train_id = 0
