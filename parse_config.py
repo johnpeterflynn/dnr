@@ -31,8 +31,11 @@ class ConfigParser:
         save_dir = Path(self.config['trainer']['save_dir'])
 
         exper_name = self.config['name']
+        timestamp = datetime.now().strftime(r'%m%d_%H%M%S')
         if run_id is None: # use timestamp as default run-id
-            run_id = datetime.now().strftime(r'%m%d_%H%M%S')
+            run_id = timestamp
+        else:
+            run_id = '{}_{}'.format(timestamp, run_id)
         self._save_dir = save_dir / 'models' / exper_name / run_id
         self._log_dir = save_dir / 'log' / exper_name / run_id
 
@@ -90,6 +93,11 @@ class ConfigParser:
             # update new config for fine-tuning
             config.update(read_json(args.config))
 
+        if args.name:
+            name = args.name
+        else:
+            name = None
+
         if args.message:
             config["description"] = args.message
         
@@ -106,7 +114,7 @@ class ConfigParser:
 
         # parse custom cli options into dictionary
         modification = {opt.target : getattr(args, _get_opt_name(opt.flags)) for opt in options}
-        return cls(config, resume, load, modification, git_hash=git_hash, dry_run=args.dry_run)
+        return cls(config, resume, load, modification, run_id=name, git_hash=git_hash, dry_run=args.dry_run)
 
     def init_obj(self, name, module, *args, **kwargs):
         """

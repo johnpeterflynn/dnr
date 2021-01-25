@@ -81,6 +81,8 @@ if __name__ == '__main__':
                       help='indices of GPUs to enable (default: all)')
     args.add_argument('-t', '--dry_run', default=False, type=bool,
                       help='If true, disables logging of models to disk and tags to git (default: False)')
+    args.add_argument('-n', '--name', default=None, type=str,
+                      help='name of this training session')
     args.add_argument('-m', '--message', default=None, type=str,
                       help='description of this training session')
     args.add_argument('-g', '--git_hash', default=None, type=str,
