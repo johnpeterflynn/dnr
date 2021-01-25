@@ -25,11 +25,12 @@ def load_model_config(experiment_name, train_id, logs='./saved'):
 
 
 # load all models by train id
-def load_trained_models(train_ids, logs='./saved', experiment_name=None, config=None):
+def load_trained_models(train_ids, logs='./saved', experiment_name=None, config=None, checkpoint_name='model_best'):
     models = {}
     epochs = {}
     for train_id in train_ids:
-        models[train_id], epochs[train_id] = load_trained_model(train_id, logs, experiment_name, config)
+        models[train_id], epochs[train_id] = load_trained_model(train_id, logs, experiment_name,
+                                                                checkpoint_name=checkpoint_name, config=config)
 
     return models, epochs
 
