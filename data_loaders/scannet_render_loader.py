@@ -158,13 +158,12 @@ class RandomCropWithReflect(object):
         
         # Assuming input_image and color_image are the same shape
         h, w, c = color_image.shape
-
         size_crop_h, size_crop_w = self.crop_size
 
         # Get a valid starting and end positions ((h, w) are top left corner)
         # NOTE: Allow cropping halfway out of bounds
         h_start = np.random.randint(-int(np.ceil(size_crop_h / 2)), h - int(size_crop_h / 2))
-        w_start = np.random.randint(-int(np.ceil(size_crop_w / 2)), h - int(size_crop_w / 2))
+        w_start = np.random.randint(-int(np.ceil(size_crop_w / 2)), w - int(size_crop_w / 2))
         h_end = h_start + size_crop_h
         w_end = w_start + size_crop_w
 
@@ -174,14 +173,16 @@ class RandomCropWithReflect(object):
         pad_w_start = np.maximum(0, -w_start)
         pad_w_end = np.maximum(0, w_end - w)
         pad_width = ((pad_h_start, pad_h_end), (pad_w_start, pad_w_end), (0, 0))
+
+        # Pad edges where crop requests out-of-bounds pixels
+        input_image = np.pad(input_image, pad_width=pad_width, mode='reflect')
+        color_image = np.pad(color_image, pad_width=pad_width, mode='reflect')
+
+        # Calculate new index for padded images
         index_h_start = h_start + pad_h_start
         index_w_start = w_start + pad_w_start
         index_h_end = index_h_start + size_crop_h
         index_w_end = index_w_start + size_crop_w
-
-        # Pad edges where crop request out-of-bounds pixels
-        input_image = np.pad(input_image, pad_width=pad_width, mode='reflect')
-        color_image = np.pad(color_image, pad_width=pad_width, mode='reflect')
 
         # Crop images
         input_image = input_image[index_h_start:index_h_end, index_w_start:index_w_end, :]
