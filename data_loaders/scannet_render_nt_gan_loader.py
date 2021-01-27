@@ -292,7 +292,7 @@ class UVMaskDataLoader(BaseDataLoader):
         val_transforms = [
             BorderCrop(self.num_ignore_border_pixels_lr, self.num_ignore_border_pixels_tb),
             Rescale(self.max_scale_size, self.max_scale_size),
-            RandomCrop(self.size), # Added to help data fit into GPU memory.
+            #RandomCrop(self.size), # Added to help data fit into GPU memory.
             Normalize(),
             ToTensor()
         ]
