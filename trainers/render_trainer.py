@@ -69,13 +69,13 @@ class RenderTrainer(BaseTrainer):
             if batch_idx == self.len_epoch:
                 break
 
+        self.writer.set_step(epoch - 1)
+        log = self.train_metrics.result(write=True)
+
         # Only visualize the final sample for brevity
         self._visualize_input(data_cpu)
         self._visualize_prediction(output.cpu())
         self._visualize_target(target_cpu)
-
-        self.writer.set_step(epoch - 1)
-        log = self.train_metrics.result(write=True)
 
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
@@ -107,16 +107,16 @@ class RenderTrainer(BaseTrainer):
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(output, target), write=False)
 
-            # Only visualize the final sample for brevity
-            self._visualize_input(data_cpu)
-            self._visualize_prediction(output.cpu())
-            self._visualize_target(target_cpu)
-
         # add histogram of model parameters to the tensorboard
         #for name, p in self.model.named_parameters():
         #    self.writer.add_histogram(name, p, bins='auto')
         self.writer.set_step(epoch - 1, 'valid')
         log = self.valid_metrics.result(write=True)
+
+        # Only visualize the final sample for brevity
+        self._visualize_input(data_cpu)
+        self._visualize_prediction(output.cpu())
+        self._visualize_target(target_cpu)
 
         return log
 

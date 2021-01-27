@@ -184,14 +184,14 @@ class GANTrainer(BaseTrainer):
             if batch_idx == self.len_epoch:
                 break
 
+        self.writer.set_step(epoch - 1)
+        log = self.train_metrics.result(write=True)
+
         # Only visualize the final sample for brevity
         self._visualize_input(real_uv_cpu)
         self._visualize_prior(self.prior_color.cpu())
         self._visualize_prediction(self.fake_color.cpu())
         self._visualize_target(self.real_color.cpu())
-
-        self.writer.set_step(epoch - 1)
-        log = self.train_metrics.result(write=True)
 
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
@@ -228,17 +228,17 @@ class GANTrainer(BaseTrainer):
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(self.fake_color, self.real_color), write=False)
 
-            # Only visualize the final sample for brevity
-            self._visualize_input(real_uv_cpu)
-            self._visualize_prior(self.prior_color.cpu())
-            self._visualize_prediction(self.fake_color.cpu())
-            self._visualize_target(self.real_color.cpu())
-
         # add histogram of model parameters to the tensorboard
         #for name, p in self.model.named_parameters():
         #    self.writer.add_histogram(name, p, bins='auto')
         self.writer.set_step(epoch - 1, 'valid')
         log = self.valid_metrics.result(write=True)
+
+        # Only visualize the final sample for brevity
+        self._visualize_input(real_uv_cpu)
+        self._visualize_prior(self.prior_color.cpu())
+        self._visualize_prediction(self.fake_color.cpu())
+        self._visualize_target(self.real_color.cpu())
 
         return log
 
