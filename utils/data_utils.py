@@ -10,7 +10,7 @@ from utils import vector_math
 
 ##-- Visualize Texture Coords --##
 _SCREEN_HEIGHT, _SCREEN_WIDTH, _UV_CHANNELS = 968, 1296, 2
-_SUPPORTED_UV_CHANNELS = 2
+_SUPPORT_MASK = False
 _NUM_BITS_PER_UV_COORD = 16
 
 
@@ -114,10 +114,10 @@ def get_val_nn_train_angles(train_rots, val_rots, unit='deg'):
     return angles
 
 
-def _uv_significand_to_float(uv_image, channels):
+def _uv_significand_to_float(uv_image):
     # Convert significand form back to floating point representation (excluding mask layer)
     uv_image = uv_image.astype(np.float32)
-    uv_image[:, :, 0:channels-1] = uv_image[:, :, 0:channels-1] / (2 ** _NUM_BITS_PER_UV_COORD)
+    uv_image[:, :, 0:2] = uv_image[:, :, 0:2] / (2 ** _NUM_BITS_PER_UV_COORD)
 
     return uv_image
 
@@ -139,20 +139,19 @@ def load_texture_coord(file, height=_SCREEN_HEIGHT, width=_SCREEN_WIDTH, channel
         channels = int(len(uv_image) / (height * width))
 
     uv_image = np.reshape(uv_image, (height, width, channels))
+
+    if not _SUPPORT_MASK:
+        uv_image = uv_image[:, :, 0:2]
+
     ## TODO: Remove need to flip image by optimizing data preprocessing
     uv_image = np.flip(uv_image, axis=0)
 
     # If dtype is an unsigned short, assume it is in significand form
     if encoded:
-        uv_image = _uv_significand_to_float(uv_image, channels)
+        uv_image = _uv_significand_to_float(uv_image)
     else:
         ## Stride becomes negative without a copy. uv_image.astype() executes a copy.
         uv_image = uv_image.copy()
-
-    if channels > _SUPPORTED_UV_CHANNELS:
-        # print("{} channels in UV files but only {} chanels supported. Clipping channels.".format(
-        #        num_channels, _SUPPORTED_UV_CHANNELS))
-        uv_image = uv_image[:, :, 0:_SUPPORTED_UV_CHANNELS]
 
     return uv_image
 
